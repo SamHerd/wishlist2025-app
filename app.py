@@ -69,27 +69,34 @@ data = load_data()
 st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
 # ---------------------------------------------------
-# Christmas banner (wide, cropped, safe)
+# Cyber Christmas Banner (correct size + cropped cleanly)
 # ---------------------------------------------------
 if Path("christmas_banner.jpg").exists():
-    st.image("christmas_banner.jpg", use_column_width=True, output_format="JPEG")
 
-    # CSS cropping to stop the image from being a giant square
+    # Assign a special CSS class ONLY to this banner
     st.markdown(
         """
         <style>
-        img {
-            max-height: 240px !important;
+        .banner-img {
             width: 100% !important;
-            object-fit: cover !important;
-            border-radius: 6px !important;
+            max-height: 260px !important;    /* Adjust to taste */
+            object-fit: cover !important;    /* Auto-crops top/bottom */
+            border-radius: 10px !important;
+            box-shadow: 0 0 18px rgba(0,255,180,0.35); /* neon glow */
         }
         </style>
         """,
         unsafe_allow_html=True
     )
+
+    st.markdown(
+        f'<img src="christmas_banner.jpg" class="banner-img">',
+        unsafe_allow_html=True
+    )
+
 else:
     st.markdown("### 🎄 (christmas_banner.jpg not found — upload it to your repo)")
+
 
 # ---------------------------------------------------
 # Predefined categories
@@ -245,3 +252,4 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
