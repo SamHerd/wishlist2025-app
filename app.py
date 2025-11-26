@@ -85,24 +85,40 @@ def scrape_image_from_html(soup):
 # =============================
 def scrape_item(url: str):
     try:
-        # Build ScraperAPI URL
         api_key = st.secrets.scraperapi.api_key
         encoded_url = urllib.parse.quote(url, safe="")
-        full_url = f"https://api.scraperapi.com/?api_key={api_key}&render=true&url={encoded_url}"
 
-        r = requests.get(full_url, timeout=20)
-        soup = BeautifulSoup(r.text, "html.parser")
+        full_url = (
+            f"https://api.scraperapi.com/"
+            f"?api_key={api_key}"
+            f"&render=true"
+            f"&premium=true"
+            f"&keep_headers=true"
+            f"&url={encoded_url}"
+        )
 
-        # Try to get a real title
+        r = requests.get(full_url, timeout=30)
+        html = r.text
+        soup = BeautifulSoup(html, "html.parser")
+
+        # Get title
         raw_title = soup.find("title").text if soup.find("title") else "Unknown Item"
         title = clean_title(raw_title)
 
+        # Get image
         img = scrape_image_from_html(soup)
-        category = detect_category(url, title)
 
+        # If still no image, try common JS-rendered selectors
+        if not img:
+            # MensWearhouse primary product image selectors
+            sel = soup.select_one("img.primary-image, img#main-image, img.product-image")
+            if sel and sel.get("src"):
+                img = sel["src"]
+
+        category = detect_category(url, title)
         return title, img, category
 
-    except Exception as e:
+    except Exception:
         return "Unknown Item", "", "Misc"
 
 
@@ -241,3 +257,4 @@ for idx, item in enumerate(filtered):
                 save_data(data)
                 st.warning("Removed.")
                 st.rerun()
+
