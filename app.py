@@ -3,10 +3,17 @@ import json
 import requests
 from bs4 import BeautifulSoup
 from pathlib import Path
+import os
 
-st.markdown("## 🔥 NEW VERSION LOADED 🔥")
+st.markdown("## 🔥 SCRAPERAPI VERSION ACTIVE 🔥")
 
 JSON_PATH = "wishlist.json"
+
+# --------------------------------------
+# Load API key from Streamlit Secrets
+# --------------------------------------
+API_KEY = st.secrets["SCRAPERAPI_KEY"]
+
 
 # =============================
 # Helpers
@@ -20,10 +27,13 @@ def load_data():
         data = json.load(f)
 
     if isinstance(data, list):
-        return {"preferences": {}, "items": data}
+        data = {"preferences": {}, "items": data}
 
-    data.setdefault("preferences", {})
-    data.setdefault("items", [])
+    if "preferences" not in data:
+        data["preferences"] = {}
+    if "items" not in data:
+        data["items"] = []
+
     return data
 
 
@@ -36,7 +46,8 @@ def clean_title(t):
     if not t:
         return "Unknown Item"
     t = t.replace("\n", " ").strip()
-    return " ".join(t.split())[:120]
+    t = " ".join(t.split())
+    return t[:120]
 
 
 def detect_category(url, title):
@@ -64,47 +75,32 @@ def detect_category(url, title):
     return "Misc"
 
 
-# =============================
-# Scraper Utilities
-# =============================
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    ),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-}
-
-
-def normalize_image_url(url):
-    """Ensures URL is valid HTTPS."""
-    if not url:
-        return ""
-    if url.startswith("//"):
-        return "https:" + url
-    if url.startswith("/"):
-        return "https://" + url.lstrip("/")
-    return url
-
-
 def scrape_image(soup):
-    # opengraph -> twitter -> img fallback
     og = soup.find("meta", property="og:image")
     if og and og.get("content"):
-        return normalize_image_url(og["content"])
+        return og["content"]
 
     tw = soup.find("meta", attrs={"name": "twitter:image"})
     if tw and tw.get("content"):
-        return normalize_image_url(tw["content"])
+        return tw["content"]
 
     for img in soup.find_all("img"):
-        src = img.get("src")
-        if src and src.startswith(("http", "//")):
-            return normalize_image_url(src)
+        src = img.get("src") or ""
+        if src.startswith("http"):
+            return src
 
     return ""
+
+
+# =============================
+# ScraperAPI wrapper
+# =============================
+def fetch_with_scraperapi(url: str):
+    api_url = (
+        f"https://api.scraperapi.com/?api_key={API_KEY}"
+        f"&render=false&url={url}"
+    )
+    return requests.get(api_url, timeout=20)
 
 
 # =============================
@@ -112,54 +108,55 @@ def scrape_image(soup):
 # =============================
 def scrape_item(url: str):
     try:
-        r = requests.get(url, headers=HEADERS, timeout=10)
-        html = r.text
+        r = fetch_with_scraperapi(url)
 
-        # ----- BLOCKED PAGE HANDLING -----
-        if "Access Denied" in html or "deny" in html.lower():
-            return "Access Denied", "", detect_category(url, "Access Denied")
+        soup = BeautifulSoup(r.text, "html.parser")
 
-        soup = BeautifulSoup(html, "html.parser")
-
-        # ----- NIKE SPECIAL CASE -----
+        # ----- SPECIAL CASE: NIKE -----
         if "nike.com" in url.lower():
             try:
                 script_tag = soup.find("script", {"id": "__NEXT_DATA__"})
                 if script_tag:
                     data_json = json.loads(script_tag.text)
+
                     product = (
                         data_json.get("props", {})
                         .get("pageProps", {})
-                        .get("product", {})
+                        .get("product")
+                        or {}
                     )
 
-                    title = clean_title(
+                    title = (
                         product.get("title")
                         or product.get("subtitle")
                         or "Nike Item"
                     )
+                    title = clean_title(title)
 
                     images = product.get("images", [])
                     image_url = ""
-
                     if images:
                         img0 = images[0]
-                        for key in ["portraitURL", "squarishURL", "fullSizeURL", "url", "imageUrl"]:
+                        for key in [
+                            "portraitURL",
+                            "squarishURL",
+                            "fullSizeURL",
+                            "url",
+                            "imageUrl",
+                        ]:
                             if img0.get(key):
-                                image_url = normalize_image_url(img0[key])
+                                image_url = img0[key]
                                 break
 
                     return title, image_url, detect_category(url, title)
             except Exception:
-                pass  # fallback below
+                pass
 
-        # ----- GENERIC SCRAPER -----
-        title_tag = soup.find("title")
-        title = clean_title(title_tag.text if title_tag else "Unknown Item")
-
+        # ----- DEFAULT SCRAPER -----
+        raw_title = soup.find("title").text if soup.find("title") else "Unknown Item"
+        title = clean_title(raw_title)
         img = scrape_image(soup)
         cat = detect_category(url, title)
-
         return title, img, cat
 
     except Exception:
@@ -172,12 +169,14 @@ def scrape_item(url: str):
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
+# Dark mode
 theme = st.sidebar.selectbox("Theme", ["Light", "Dark"])
 if theme == "Dark":
     st.markdown(
         """
         <style>
         body, .stApp { background-color:#1a1a1a !important; color:white !important; }
+        .stButton button { background-color:#333 !important; color:white !important; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -190,6 +189,7 @@ st.title("🎁 Sam’s 2025 Wishlist")
 # Preferences
 # =============================
 st.header("Your Preferences")
+
 prefs = data["preferences"]
 
 shirt_size = st.text_input("Shirt size:", prefs.get("shirt_size", ""))
@@ -199,13 +199,12 @@ shoe_size = st.text_input("Shoe size:", prefs.get("shoe_size", ""))
 styles = st.text_input("Preferred colors/styles:", prefs.get("styles", ""))
 
 if st.button("Save Preferences"):
-    prefs.update(
-        shirt_size=shirt_size,
-        jacket_size=jacket_size,
-        pants_size=pants_size,
-        shoe_size=shoe_size,
-        styles=styles,
-    )
+    prefs["shirt_size"] = shirt_size
+    prefs["jacket_size"] = jacket_size
+    prefs["pants_size"] = pants_size
+    prefs["shoe_size"] = shoe_size
+    prefs["styles"] = styles
+    data["preferences"] = prefs
     save_data(data)
     st.success("Saved!")
 
@@ -214,6 +213,7 @@ if st.button("Save Preferences"):
 # Add Item
 # =============================
 st.header("Add a New Item")
+
 new_url = st.text_input("Item URL:")
 priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
@@ -221,16 +221,16 @@ if st.button("Add Item"):
     with st.spinner("Scraping item…"):
         title, img, auto_cat = scrape_item(new_url)
 
-    data["items"].append(
-        {
-            "name": title,
-            "url": new_url,
-            "image": img,
-            "category": auto_cat,
-            "priority": priority,
-            "purchased": False,
-        }
-    )
+    item = {
+        "name": title,
+        "url": new_url,
+        "image": img,
+        "category": auto_cat,
+        "priority": priority,
+        "purchased": False,
+    }
+
+    data["items"].append(item)
     save_data(data)
     st.success("Item added!")
     st.rerun()
@@ -240,63 +240,70 @@ if st.button("Add Item"):
 # Filters
 # =============================
 st.header("Your Wishlist")
-items = data["items"]
 
-all_categories = sorted({i["category"] for i in items}) if items else []
+all_categories = sorted({i["category"] for i in data["items"]}) if data["items"] else []
 filter_cat = st.multiselect("Filter by category:", all_categories)
 filter_priority = st.multiselect("Filter by priority:", ["High", "Medium", "Low"])
 search = st.text_input("Search items:")
 
-filtered = list(items)
+filtered = list(data["items"])
 
 if filter_cat:
     filtered = [i for i in filtered if i["category"] in filter_cat]
+
 if filter_priority:
     filtered = [i for i in filtered if i["priority"] in filter_priority]
+
 if search.strip():
     filtered = [i for i in filtered if search.lower() in i["name"].lower()]
 
 
 # =============================
-# Display Items
+# Display Items (2 columns)
 # =============================
 cols = st.columns(2)
 
 for idx, item in enumerate(filtered):
     with cols[idx % 2]:
-        st.container()
-        if item.get("image"):
-            st.image(item["image"], width=260)
-        else:
-            st.write("(no image)")
+        with st.container():
 
-        st.subheader(item["name"])
-        st.write(f"**Category:** {item['category']}")
-        st.write(f"**Priority:** {item['priority']}")
-        st.write(f"[View Item]({item['url']})")
+            if item.get("image"):
+                st.image(item["image"], width=260)
+            else:
+                st.write("(no image)")
 
-        img_override = st.text_input(
-            "Image URL (optional)",
-            value=item.get("image", ""),
-            key=f"img_{idx}",
-        )
-        if img_override != item.get("image", ""):
-            item["image"] = img_override
-            save_data(data)
-            st.success("Updated!")
-            st.rerun()
+            st.subheader(item["name"])
+            st.write(f"**Category:** {item['category']}")
+            st.write(f"**Priority:** {item['priority']}")
+            st.write(f"[View Item]({item['url']})")
 
-        purchased_flag = st.checkbox(
-            "Purchased?",
-            value=item.get("purchased", False),
-            key=f"purchased_{idx}",
-        )
-        if purchased_flag != item.get("purchased", False):
-            item["purchased"] = purchased_flag
-            save_data(data)
+            # Manual image override
+            img_override = st.text_input(
+                "Image URL (optional)",
+                value=item.get("image", ""),
+                key=f"img_{idx}",
+            )
+            if img_override != item.get("image", ""):
+                item["image"] = img_override
+                save_data(data)
+                st.success("Image URL updated!")
+                st.rerun()
 
-        if st.button("❌ Remove", key=f"rm_{idx}"):
-            data["items"].remove(item)
-            save_data(data)
-            st.warning("Removed!")
-            st.rerun()
+            # Purchased toggle
+            purchased_flag = st.checkbox(
+                "Purchased?",
+                value=item.get("purchased", False),
+                key=f"purchased_{idx}",
+            )
+            if purchased_flag != item.get("purchased", False):
+                item["purchased"] = purchased_flag
+                save_data(data)
+
+            # Remove button
+            if st.button("❌ Remove", key=f"rm_{idx}"):
+                data["items"].remove(item)
+                save_data(data)
+                st.warning("Removed.")
+                st.rerun()
+
+print("APP LOADED")
