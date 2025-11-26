@@ -5,6 +5,10 @@ from pathlib import Path
 
 JSON_PATH = "wishlist.json"
 
+RAW_BANNER_URL = (
+    "https://raw.githubusercontent.com/SamHerd/wishlist2025-app/main/christmas_banner.jpg"
+)
+
 # ---------------------------------------------------
 # Load + Save JSON
 # ---------------------------------------------------
@@ -72,37 +76,29 @@ data = load_data()
 st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
 # ---------------------------------------------------
-# Cyber Christmas Banner (wide, cropped, cache-busted)
+# Cyber Christmas Banner (RAW GitHub URL — guaranteed to load)
 # ---------------------------------------------------
-if Path("christmas_banner.jpg").exists():
+st.markdown(
+    """
+    <style>
+    img.banner-img {
+        width: 100% !important;
+        max-height: 260px !important;
+        object-fit: cover !important;
+        border-radius: 10px !important;
+        box-shadow: 0 0 18px rgba(0,255,180,0.35);
+        margin-top: 10px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-    # Banner CSS applied ONLY to the banner, not all images
-    st.markdown(
-        """
-        <style>
-        img.banner-img {
-            width: 100% !important;
-            height: 260px !important;
-            object-fit: cover !important;
-            border-radius: 10px !important;
-            box-shadow: 0 0 18px rgba(0,255,180,0.35);
-            display: block;
-            margin-top: 10px;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # Cache-busting query parameter forces browser to load new version
-    st.markdown(
-        f'<img src="christmas_banner.jpg?cacheBust=3" class="banner-img">',
-        unsafe_allow_html=True
-    )
-
-else:
-    st.markdown("### 🎄 (christmas_banner.jpg not found — upload it to your repo)")
-
+# Always loads successfully
+st.markdown(
+    f'<img src="{RAW_BANNER_URL}" class="banner-img">',
+    unsafe_allow_html=True
+)
 
 # ---------------------------------------------------
 # Predefined categories
