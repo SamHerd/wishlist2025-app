@@ -6,7 +6,7 @@ from pathlib import Path
 JSON_PATH = "wishlist.json"
 
 # ---------------------------------------------------
-# Load + Save JSON (with archive support)
+# Load + Save JSON
 # ---------------------------------------------------
 def load_data():
     p = Path(JSON_PATH)
@@ -32,7 +32,7 @@ def save_data(data):
 
 
 # ---------------------------------------------------
-# Convert uploaded file → Base64 string
+# Convert uploaded file → Base64
 # ---------------------------------------------------
 def file_to_base64(file):
     if not file:
@@ -47,6 +47,9 @@ def show_base64_image(b64_str):
     st.image(base64.b64decode(b64_str), use_column_width=False)
 
 
+# ---------------------------------------------------
+# Price parser
+# ---------------------------------------------------
 def parse_price_to_float(text):
     if not text or not text.strip():
         return None, None
@@ -57,11 +60,11 @@ def parse_price_to_float(text):
     try:
         return float(cleaned), None
     except ValueError:
-        return None, f"Could not understand price: '{raw}'. Use something like 129.99 or $129.99."
+        return None, f"Could not understand price: '{raw}'. Use 129.99 or $129.99."
 
 
 # ---------------------------------------------------
-# Streamlit UI Setup
+# Streamlit Setup
 # ---------------------------------------------------
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
@@ -69,28 +72,31 @@ data = load_data()
 st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
 # ---------------------------------------------------
-# Cyber Christmas Banner (correct size + cropped cleanly)
+# Cyber Christmas Banner (wide, cropped, cache-busted)
 # ---------------------------------------------------
 if Path("christmas_banner.jpg").exists():
 
-    # Assign a special CSS class ONLY to this banner
+    # Banner CSS applied ONLY to the banner, not all images
     st.markdown(
         """
         <style>
-        .banner-img {
+        img.banner-img {
             width: 100% !important;
-            max-height: 260px !important;    /* Adjust to taste */
-            object-fit: cover !important;    /* Auto-crops top/bottom */
+            height: 260px !important;
+            object-fit: cover !important;
             border-radius: 10px !important;
-            box-shadow: 0 0 18px rgba(0,255,180,0.35); /* neon glow */
+            box-shadow: 0 0 18px rgba(0,255,180,0.35);
+            display: block;
+            margin-top: 10px;
         }
         </style>
         """,
         unsafe_allow_html=True
     )
 
+    # Cache-busting query parameter forces browser to load new version
     st.markdown(
-        f'<img src="christmas_banner.jpg" class="banner-img">',
+        f'<img src="christmas_banner.jpg?cacheBust=3" class="banner-img">',
         unsafe_allow_html=True
     )
 
@@ -107,14 +113,14 @@ CATEGORIES = [
 ]
 
 # ---------------------------------------------------
-# Tabs: View Wishlist FIRST (default), Add Item SECOND
+# Tabs (View first, Add second)
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
 tab_add = tabs[1]
 
 # ---------------------------------------------------
-# TAB 1: VIEW WISHLIST (now default)
+# TAB 1: VIEW WISHLIST
 # ---------------------------------------------------
 with tab_view:
     st.header("Your Wishlist")
@@ -132,25 +138,29 @@ with tab_view:
 
     filtered = list(data["items"])
 
+    # Category filter
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
 
+    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
+    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
     if min_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] >= min_price_val]
-
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
+    # Name search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
 
+    # Display in 2-column layout
     cols = st.columns(2)
 
     for idx, item in enumerate(filtered):
@@ -189,6 +199,7 @@ with tab_view:
                 st.warning("Removed.")
                 st.rerun()
 
+
 # ---------------------------------------------------
 # TAB 2: ADD ITEM
 # ---------------------------------------------------
@@ -196,7 +207,6 @@ with tab_add:
     st.header("Add a New Item")
 
     new_url = st.text_input("Item URL:")
-
     archive_entry = data["archive"].get(new_url, {}) if new_url else {}
 
     auto_name = archive_entry.get("name", "")
@@ -211,8 +221,7 @@ with tab_add:
     uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
 
     name = st.text_input("Item name:", auto_name)
-    category = st.selectbox("Category:", CATEGORIES,
-                            index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
+    category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
     priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
     size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
@@ -252,4 +261,3 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
-
