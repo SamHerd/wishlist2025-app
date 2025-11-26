@@ -69,10 +69,25 @@ data = load_data()
 st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
 # ---------------------------------------------------
-# Christmas banner (safe + correct)
+# Christmas banner (wide, cropped, safe)
 # ---------------------------------------------------
 if Path("christmas_banner.jpg").exists():
-    st.image("christmas_banner.jpg", use_column_width=True)
+    st.image("christmas_banner.jpg", use_column_width=True, output_format="JPEG")
+
+    # CSS cropping to stop the image from being a giant square
+    st.markdown(
+        """
+        <style>
+        img {
+            max-height: 240px !important;
+            width: 100% !important;
+            object-fit: cover !important;
+            border-radius: 6px !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 else:
     st.markdown("### 🎄 (christmas_banner.jpg not found — upload it to your repo)")
 
@@ -85,77 +100,14 @@ CATEGORIES = [
 ]
 
 # ---------------------------------------------------
-# Tabs: Add Item / View Wishlist
+# Tabs: View Wishlist FIRST (default), Add Item SECOND
 # ---------------------------------------------------
-tab_add, tab_view = st.tabs(["➕ Add a New Item", "📜 View Wishlist"])
-
-# ---------------------------------------------------
-# TAB 1: ADD ITEM
-# ---------------------------------------------------
-with tab_add:
-    st.header("Add a New Item")
-
-    new_url = st.text_input("Item URL:")
-
-    archive_entry = data["archive"].get(new_url, {}) if new_url else {}
-
-    auto_name = archive_entry.get("name", "")
-    auto_cat = archive_entry.get("category", "Misc")
-    auto_img = archive_entry.get("image", "")
-    auto_size = archive_entry.get("size", "")
-    auto_style = archive_entry.get("style", "")
-    auto_price_val = archive_entry.get("price", None)
-
-    auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
-
-    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
-
-    name = st.text_input("Item name:", auto_name)
-    category = st.selectbox("Category:", CATEGORIES,
-                            index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
-    priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
-
-    size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
-    style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
-    price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
-
-    if st.button("Add Item"):
-        if not new_url.strip():
-            st.error("Please enter an item URL.")
-            st.stop()
-        if not name.strip():
-            st.error("Please enter an item name.")
-            st.stop()
-
-        price_val, price_err = parse_price_to_float(price_str)
-        if price_err:
-            st.error(price_err)
-            st.stop()
-
-        img_b64 = file_to_base64(uploaded_file) if uploaded_file else auto_img
-
-        item = {
-            "name": name,
-            "url": new_url,
-            "image": img_b64,
-            "category": category,
-            "priority": priority,
-            "purchased": False,
-            "size": size,
-            "style": style,
-            "price": price_val
-        }
-
-        data["items"].append(item)
-        data["archive"][new_url] = item.copy()
-
-        save_data(data)
-        st.success("Item added!")
-        st.rerun()
-
+tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
+tab_view = tabs[0]
+tab_add = tabs[1]
 
 # ---------------------------------------------------
-# TAB 2: VIEW WISHLIST
+# TAB 1: VIEW WISHLIST (now default)
 # ---------------------------------------------------
 with tab_view:
     st.header("Your Wishlist")
@@ -229,3 +181,67 @@ with tab_view:
                 save_data(data)
                 st.warning("Removed.")
                 st.rerun()
+
+# ---------------------------------------------------
+# TAB 2: ADD ITEM
+# ---------------------------------------------------
+with tab_add:
+    st.header("Add a New Item")
+
+    new_url = st.text_input("Item URL:")
+
+    archive_entry = data["archive"].get(new_url, {}) if new_url else {}
+
+    auto_name = archive_entry.get("name", "")
+    auto_cat = archive_entry.get("category", "Misc")
+    auto_img = archive_entry.get("image", "")
+    auto_size = archive_entry.get("size", "")
+    auto_style = archive_entry.get("style", "")
+    auto_price_val = archive_entry.get("price", None)
+
+    auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
+
+    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
+
+    name = st.text_input("Item name:", auto_name)
+    category = st.selectbox("Category:", CATEGORIES,
+                            index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
+    priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
+
+    size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
+    style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
+    price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
+
+    if st.button("Add Item"):
+        if not new_url.strip():
+            st.error("Please enter an item URL.")
+            st.stop()
+        if not name.strip():
+            st.error("Please enter an item name.")
+            st.stop()
+
+        price_val, price_err = parse_price_to_float(price_str)
+        if price_err:
+            st.error(price_err)
+            st.stop()
+
+        img_b64 = file_to_base64(uploaded_file) if uploaded_file else auto_img
+
+        item = {
+            "name": name,
+            "url": new_url,
+            "image": img_b64,
+            "category": category,
+            "priority": priority,
+            "purchased": False,
+            "size": size,
+            "style": style,
+            "price": price_val
+        }
+
+        data["items"].append(item)
+        data["archive"][new_url] = item.copy()
+
+        save_data(data)
+        st.success("Item added!")
+        st.rerun()
