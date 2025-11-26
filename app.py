@@ -81,14 +81,17 @@ st.title("🎁 Sam’s 2025 Christmas Wishlist")
 st.markdown(
     """
     <style>
-    img.banner-img {
-        width: 100% !important;
-        max-height: 260px !important;
-        object-fit: cover !important;
-        border-radius: 10px !important;
-        box-shadow: 0 0 18px rgba(0,255,180,0.35);
-        margin-top: 10px;
-    }
+img.banner-img {
+    width: 100% !important;
+    max-height: 320px !important;     /* slightly taller */
+    object-fit: cover !important;
+    object-position: center top !important;   /* shift crop upward for face */
+    border-radius: 10px !important;
+    box-shadow: 0 0 18px rgba(0,255,180,0.35);
+    display: block;
+    margin-top: 10px;
+}
+
     </style>
     """,
     unsafe_allow_html=True
@@ -257,3 +260,4 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
