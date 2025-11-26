@@ -49,6 +49,25 @@ def show_base64_image(b64_str):
     st.image(base64.b64decode(b64_str), use_column_width=False)
 
 
+def parse_price_to_float(text):
+    """
+    Take a user-entered price like '129.99' or '$129.99' or '129,99'
+    and try to convert to float. Returns (float or None, error_msg or None).
+    """
+    if not text or not text.strip():
+        return None, None
+
+    raw = text.strip()
+    # strip common symbols
+    cleaned = raw.replace("$", "").replace(",", "").strip()
+
+    try:
+        val = float(cleaned)
+        return val, None
+    except ValueError:
+        return None, f"Could not understand price: '{raw}'. Use something like 129.99 or $129.99."
+
+
 # ---------------------------------------------------
 # Streamlit UI Setup
 # ---------------------------------------------------
@@ -57,29 +76,11 @@ data = load_data()
 
 st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
-
 # ---------------------------------------------------
-# Preferences
+# Christmas banner (replaces old 'My Preferences' section)
 # ---------------------------------------------------
-st.header("Your Preferences")
-prefs = data["preferences"]
-
-shirt = st.text_input("Shirt size:", prefs.get("shirt_size", ""))
-jacket = st.text_input("Jacket size:", prefs.get("jacket_size", ""))
-pants = st.text_input("Pants size:", prefs.get("pants_size", ""))
-shoes = st.text_input("Shoe size:", prefs.get("shoe_size", ""))
-styles = st.text_input("Preferred colors/styles:", prefs.get("styles", ""))
-
-if st.button("Save Preferences"):
-    prefs["shirt_size"] = shirt
-    prefs["jacket_size"] = jacket
-    prefs["pants_size"] = pants
-    prefs["shoe_size"] = shoes
-    prefs["styles"] = styles
-    data["preferences"] = prefs
-    save_data(data)
-    st.success("Saved!")
-
+# Replace 'christmas_banner.png' with your own DALL·E-generated image file.
+st.image("christmas_banner.png", use_column_width=True)
 
 # ---------------------------------------------------
 # Predefined categories
@@ -89,113 +90,194 @@ CATEGORIES = [
     "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
 ]
 
+# ---------------------------------------------------
+# Tabs: Add Item / View Wishlist
+# ---------------------------------------------------
+tab_add, tab_view = st.tabs(["➕ Add a New Item", "📜 View Wishlist"])
 
 # ---------------------------------------------------
-# ADD ITEM
+# TAB 1: ADD ITEM
 # ---------------------------------------------------
-st.header("Add a New Item")
+with tab_add:
+    st.header("Add a New Item")
 
-new_url = st.text_input("Item URL:")
-uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
+    new_url = st.text_input("Item URL:")
 
-# Auto-fill name/category from archive
-auto_name = ""
-auto_cat = "Misc"
-auto_img = ""
+    # Look up archive defaults for this URL
+    archive_entry = data["archive"].get(new_url, {}) if new_url else {}
 
-if new_url in data["archive"]:
-    prev = data["archive"][new_url]
-    auto_name = prev.get("name", "")
-    auto_cat = prev.get("category", "Misc")
-    auto_img = prev.get("image", "")
+    auto_name = archive_entry.get("name", "")
+    auto_cat = archive_entry.get("category", "Misc")
+    auto_img = archive_entry.get("image", "")
+    auto_size = archive_entry.get("size", "")
+    auto_style = archive_entry.get("style", "")
+    auto_price_val = archive_entry.get("price", None)
 
-name = st.text_input("Item name:", auto_name)
-category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
-priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
-
-if st.button("Add Item"):
-    # Convert uploaded or fallback to archived image
-    if uploaded_file:
-        img_b64 = file_to_base64(uploaded_file)
+    if auto_price_val is not None:
+        auto_price_str = f"{auto_price_val:.2f}"
     else:
-        img_b64 = auto_img
+        auto_price_str = ""
 
-    item = {
-        "name": name,
-        "url": new_url,
-        "image": img_b64,
-        "category": category,
-        "priority": priority,
-        "purchased": False
-    }
+    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
 
-    # Save to current list
-    data["items"].append(item)
+    name = st.text_input("Item name:", auto_name)
+    category = st.selectbox(
+        "Category:",
+        CATEGORIES,
+        index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0
+    )
+    priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
-    # Save to archive for future reuse
-    data["archive"][new_url] = {
-        "name": name,
-        "category": category,
-        "image": img_b64
-    }
+    size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
+    style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
 
-    save_data(data)
-    st.success("Item added!")
-    st.rerun()
+    price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
 
+    if st.button("Add Item"):
+        # Basic validation
+        if not new_url.strip():
+            st.error("Please enter an item URL.")
+            st.stop()
+        if not name.strip():
+            st.error("Please enter an item name.")
+            st.stop()
+
+        # Parse price
+        price_val, price_err = parse_price_to_float(price_str)
+        if price_err:
+            st.error(price_err)
+            st.stop()
+
+        # Convert uploaded image OR reuse archived
+        if uploaded_file:
+            img_b64 = file_to_base64(uploaded_file)
+        else:
+            img_b64 = auto_img  # can be "" if nothing archived yet
+
+        item = {
+            "name": name,
+            "url": new_url,
+            "image": img_b64,
+            "category": category,
+            "priority": priority,
+            "purchased": False,
+            "size": size,
+            "style": style,
+            "price": price_val  # float or None
+        }
+
+        # Save to current list
+        data["items"].append(item)
+
+        # Save to archive for future reuse
+        data["archive"][new_url] = {
+            "name": name,
+            "category": category,
+            "image": img_b64,
+            "size": size,
+            "style": style,
+            "price": price_val
+        }
+
+        save_data(data)
+        st.success("Item added!")
+        st.rerun()
 
 # ---------------------------------------------------
-# FILTERS
+# TAB 2: VIEW WISHLIST
 # ---------------------------------------------------
-st.header("Your Wishlist")
+with tab_view:
+    st.header("Your Wishlist")
 
-filter_cat = st.multiselect("Filter by category:", CATEGORIES)
-filter_priority = st.multiselect("Filter by priority:", ["High", "Medium", "Low"])
-search = st.text_input("Search items:")
+    # Filters
+    filter_cat = st.multiselect("Filter by category:", CATEGORIES)
+    filter_priority = st.multiselect("Filter by priority:", ["High", "Medium", "Low"])
 
-filtered = data["items"]
+    col_min, col_max = st.columns(2)
+    with col_min:
+        min_price_str = st.text_input("Min price (optional):", key="min_price_filter")
+    with col_max:
+        max_price_str = st.text_input("Max price (optional):", key="max_price_filter")
 
-if filter_cat:
-    filtered = [i for i in filtered if i["category"] in filter_cat]
+    search = st.text_input("Search items by name:", key="search_filter")
 
-if filter_priority:
-    filtered = [i for i in filtered if i["priority"] in filter_priority]
+    # Start from all items
+    filtered = list(data["items"])
 
-if search.strip():
-    filtered = [i for i in filtered if search.lower() in i["name"].lower()]
+    # Category filter
+    if filter_cat:
+        filtered = [i for i in filtered if i.get("category") in filter_cat]
 
+    # Priority filter
+    if filter_priority:
+        filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
-# ---------------------------------------------------
-# DISPLAY ITEMS (2-column layout)
-# ---------------------------------------------------
-cols = st.columns(2)
+    # Price filters
+    min_price_val, min_err = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
+    max_price_val, max_err = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
-for idx, item in enumerate(filtered):
-    with cols[idx % 2]:
-        st.write("---")
+    if min_err:
+        st.warning(min_err)
+    if max_err:
+        st.warning(max_err)
 
-        # Show image from Base64
-        show_base64_image(item["image"])
+    if min_price_val is not None:
+        filtered = [
+            i for i in filtered
+            if i.get("price") is not None and i.get("price") >= min_price_val
+        ]
+    if max_price_val is not None:
+        filtered = [
+            i for i in filtered
+            if i.get("price") is not None and i.get("price") <= max_price_val
+        ]
 
-        st.subheader(item["name"])
-        st.write(f"**Category:** {item['category']}")
-        st.write(f"**Priority:** {item['priority']}")
-        st.write(f"[View Item]({item['url']})")
+    # Text search
+    if search.strip():
+        s = search.lower()
+        filtered = [i for i in filtered if s in i.get("name", "").lower()]
 
-        # Purchased toggle
-        purchased_flag = st.checkbox(
-            "Purchased?",
-            value=item.get("purchased", False),
-            key=f"purchased_{idx}"
-        )
-        if purchased_flag != item.get("purchased", False):
-            item["purchased"] = purchased_flag
-            save_data(data)
+    # DISPLAY ITEMS (2-column layout)
+    cols = st.columns(2)
 
-        # Remove button
-        if st.button("❌ Remove", key=f"rm_{idx}"):
-            data["items"].remove(item)
-            save_data(data)
-            st.warning("Removed.")
-            st.rerun()
+    for idx, item in enumerate(filtered):
+        with cols[idx % 2]:
+            st.write("---")
 
+            # Show image from Base64
+            show_base64_image(item.get("image", ""))
+
+            st.subheader(item.get("name", "(no name)"))
+            st.write(f"**Category:** {item.get('category', 'N/A')}")
+            st.write(f"**Priority:** {item.get('priority', 'N/A')}")
+
+            # Optional fields
+            if item.get("size"):
+                st.write(f"**Size:** {item['size']}")
+            if item.get("style"):
+                st.write(f"**Style/Color:** {item['style']}")
+
+            price_val = item.get("price")
+            if price_val is not None:
+                st.write(f"**Price:** ${price_val:,.2f}")
+
+            # URL
+            if item.get("url"):
+                st.write(f"[View Item]({item['url']})")
+
+            # Purchased toggle
+            purchased_flag = st.checkbox(
+                "Purchased?",
+                value=item.get("purchased", False),
+                key=f"purchased_{idx}"
+            )
+            if purchased_flag != item.get("purchased", False):
+                item["purchased"] = purchased_flag
+                save_data(data)
+
+            # Remove button
+            if st.button("❌ Remove", key=f"rm_{idx}"):
+                data["items"].remove(item)
+                save_data(data)
+                st.warning("Removed.")
+                st.rerun()
