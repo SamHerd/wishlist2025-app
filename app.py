@@ -55,7 +55,7 @@ def show_base64_image(b64_str):
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
-st.title("🎁 Sam’s 2025 Wishlist (Manual Image Version)")
+st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
 
 # ---------------------------------------------------
@@ -198,3 +198,4 @@ for idx, item in enumerate(filtered):
             save_data(data)
             st.warning("Removed.")
             st.rerun()
+
