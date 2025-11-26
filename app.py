@@ -85,12 +85,13 @@ img.banner-img {
     width: 100% !important;
     max-height: 380px !important;
     object-fit: cover !important;
-    object-position: 50% 30% !important;  /* <-- adjust vertical crop */
+    object-position: 50% 45% !important;   /* show more lower area */
     border-radius: 10px !important;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
     display: block;
     margin-top: 10px;
 }
+
 
 
     </style>
@@ -261,6 +262,7 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
 
 
 
