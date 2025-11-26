@@ -36,7 +36,7 @@ def save_data(data):
 
 
 # ---------------------------------------------------
-# Convert uploaded file → Base64
+# Base64 image helpers
 # ---------------------------------------------------
 def file_to_base64(file):
     if not file:
@@ -73,31 +73,80 @@ def parse_price_to_float(text):
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
-st.title("🎁 Sam’s 2025 Christmas Wishlist")
+# ---------------------------------------------------
+# GLOBAL CYBER-CHRISTMAS STYLES
+# ---------------------------------------------------
+st.markdown("""
+<style>
 
-# ---------------------------------------------------
-# Cyber Christmas Banner (RAW GitHub URL — guaranteed to load)
-# ---------------------------------------------------
-st.markdown(
-    """
-    <style>
+/* ---- Page Background Glow ---- */
+.main {
+    background: linear-gradient(
+        180deg,
+        rgba(0,255,180,0.08) 0%,
+        rgba(0,0,0,0) 45%
+    ) !important;
+}
+
+/* ---- Banner Styling ---- */
 img.banner-img {
     width: 100% !important;
     max-height: 400px !important;
     object-fit: cover !important;
-    object-position: 50% 30% !important;  /* <-- adjust vertical crop */
+    object-position: 50% 30% !important;
     border-radius: 10px !important;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
     display: block;
     margin-top: 10px;
 }
 
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+/* ---- Neon Tabs ---- */
+.stTabs [data-baseweb="tab"] {
+    color: #0ff !important;
+    font-weight: 600 !important;
+    transition: 0.25s;
+}
 
-# Always loads successfully
+.stTabs [data-baseweb="tab"]:hover {
+    text-shadow: 0 0 10px rgba(0,255,180,0.7);
+}
+
+/* ---- Fancy neon divider ---- */
+hr {
+    border: none;
+    border-top: 1px solid rgba(0,255,180,0.35);
+    margin: 1.5rem 0;
+}
+
+/* ---- Glow behind item cards ---- */
+div[data-testid="column"] > div {
+    background: rgba(0,255,180,0.03);
+    border-radius: 10px;
+    padding: 10px 14px;
+    box-shadow: 0 0 12px rgba(0,255,180,0.15);
+}
+
+/* ---- Buttons ---- */
+button[kind="primary"] {
+    background-color: #0e0e0e !important;
+    border: 1px solid #0ff !important;
+    box-shadow: 0 0 8px rgba(0,255,180,0.4) !important;
+    border-radius: 6px !important;
+}
+button[kind="secondary"] {
+    border-radius: 6px !important;
+    box-shadow: 0 0 6px rgba(255,0,80,0.35) !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+
+# ---------------------------------------------------
+# Title + Banner
+# ---------------------------------------------------
+st.title("🎁 Sam’s 2025 Christmas Wishlist")
+
 st.markdown(
     f'<img src="{RAW_BANNER_URL}" class="banner-img">',
     unsafe_allow_html=True
@@ -112,17 +161,20 @@ CATEGORIES = [
 ]
 
 # ---------------------------------------------------
-# Tabs (View first, Add second)
+# Tabs (View Wishlist first)
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
 tab_add = tabs[1]
 
+
 # ---------------------------------------------------
 # TAB 1: VIEW WISHLIST
 # ---------------------------------------------------
 with tab_view:
+
     st.header("Your Wishlist")
+    st.write("<hr>", unsafe_allow_html=True)
 
     filter_cat = st.multiselect("Filter by category:", CATEGORIES)
     filter_priority = st.multiselect("Filter by priority:", ["High", "Medium", "Low"])
@@ -154,16 +206,16 @@ with tab_view:
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
-    # Name search
+    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
 
-    # Display in 2-column layout
     cols = st.columns(2)
 
     for idx, item in enumerate(filtered):
         with cols[idx % 2]:
+
             st.write("---")
 
             show_base64_image(item.get("image", ""))
@@ -200,10 +252,12 @@ with tab_view:
 
 
 # ---------------------------------------------------
-# TAB 2: ADD ITEM
+# TAB 2: ADD NEW ITEM
 # ---------------------------------------------------
 with tab_add:
+
     st.header("Add a New Item")
+    st.write("<hr>", unsafe_allow_html=True)
 
     new_url = st.text_input("Item URL:")
     archive_entry = data["archive"].get(new_url, {}) if new_url else {}
@@ -260,10 +314,3 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
-
-
-
-
-
-
-
