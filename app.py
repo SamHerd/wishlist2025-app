@@ -1,30 +1,29 @@
 import streamlit as st
 import json
-import requests
-from bs4 import BeautifulSoup
+import base64
 from pathlib import Path
-import urllib.parse
-
-st.markdown("## 🔥 ScraperAPI Enabled Version 🔥")
 
 JSON_PATH = "wishlist.json"
 
-# =============================
-# Load / Save Data
-# =============================
+# ---------------------------------------------------
+# Load + Save JSON (with archive support)
+# ---------------------------------------------------
 def load_data():
-    path = Path(JSON_PATH)
-    if not path.exists():
-        return {"preferences": {}, "items": []}
+    p = Path(JSON_PATH)
+    if not p.exists():
+        return {"preferences": {}, "items": [], "archive": {}}
 
-    with open(path, "r") as f:
+    with open(JSON_PATH, "r") as f:
         data = json.load(f)
 
-    if isinstance(data, list):
-        data = {"preferences": {}, "items": data}
+    # safety checks
+    if "preferences" not in data:
+        data["preferences"] = {}
+    if "items" not in data:
+        data["items"] = []
+    if "archive" not in data:
+        data["archive"] = {}
 
-    data.setdefault("preferences", {})
-    data.setdefault("items", [])
     return data
 
 
@@ -33,173 +32,124 @@ def save_data(data):
         json.dump(data, f, indent=2)
 
 
-# =============================
-# Utilities
-# =============================
-def clean_title(t):
-    if not t:
-        return "Unknown Item"
-    t = t.replace("\n", " ").strip()
-    t = " ".join(t.split())
-    return t[:140]
+# ---------------------------------------------------
+# Convert uploaded file → Base64 string
+# ---------------------------------------------------
+def file_to_base64(file):
+    if not file:
+        return ""
+    return base64.b64encode(file.read()).decode("utf-8")
 
 
-def detect_category(url, title):
-    u = url.lower()
-    t = title.lower()
-
-    if "nike" in u: return "Shoes"
-    if "north-face" in u or "thenorthface" in u: return "Jacket"
-    if "carhartt" in u: return "Outerwear"
-    if "macys" in u: return "Shirts"
-    if "menswearhouse" in u: return "Menswear"
-    if "pacsun" in u: return "Graphic Tee"
-    if "unt" in u or "north texas" in t: return "UNT Merch"
-    if "amazon" in u and ("lego" in u or "puzzle" in t): return "Toys"
-    if "amazon" in u: return "Amazon"
-    return "Misc"
+# Base64 → displayed image
+def show_base64_image(b64_str):
+    if not b64_str:
+        st.write("(no image)")
+        return
+    st.image(base64.b64decode(b64_str), use_column_width=False)
 
 
-def scrape_image_from_html(soup):
-    # OpenGraph
-    og = soup.find("meta", property="og:image")
-    if og and og.get("content"):
-        return og.get("content")
-
-    # Twitter Card
-    tw = soup.find("meta", attrs={"name": "twitter:image"})
-    if tw and tw.get("content"):
-        return tw.get("content")
-
-    # Fallback: first <img>
-    for img in soup.find_all("img"):
-        src = img.get("src")
-        if src and src.startswith("http"):
-            return src
-
-    return ""
-
-
-# =============================
-# Scrape via ScraperAPI
-# =============================
-def scrape_item(url: str):
-    try:
-        api_key = st.secrets.scraperapi.api_key
-        encoded_url = urllib.parse.quote(url, safe="")
-
-        full_url = (
-            f"https://api.scraperapi.com/"
-            f"?api_key={api_key}"
-            f"&render=true"
-            f"&premium=true"
-            f"&keep_headers=true"
-            f"&url={encoded_url}"
-        )
-
-        r = requests.get(full_url, timeout=30)
-        html = r.text
-        soup = BeautifulSoup(html, "html.parser")
-
-        # Get title
-        raw_title = soup.find("title").text if soup.find("title") else "Unknown Item"
-        title = clean_title(raw_title)
-
-        # Get image
-        img = scrape_image_from_html(soup)
-
-        # If still no image, try common JS-rendered selectors
-        if not img:
-            # MensWearhouse primary product image selectors
-            sel = soup.select_one("img.primary-image, img#main-image, img.product-image")
-            if sel and sel.get("src"):
-                img = sel["src"]
-
-        category = detect_category(url, title)
-        return title, img, category
-
-    except Exception:
-        return "Unknown Item", "", "Misc"
-
-
-# =============================
-# Streamlit Setup
-# =============================
+# ---------------------------------------------------
+# Streamlit UI Setup
+# ---------------------------------------------------
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
-# Dark Mode
-theme = st.sidebar.selectbox("Theme", ["Light", "Dark"])
-if theme == "Dark":
-    st.markdown("""
-        <style>
-        body, .stApp { background-color:#1a1a1a !important; color:white !important; }
-        .stButton button { background-color:#333 !important; color:white !important; }
-        </style>
-    """, unsafe_allow_html=True)
-
-st.title("🎁 Sam’s 2025 Wishlist (ScraperAPI Edition)")
+st.title("🎁 Sam’s 2025 Wishlist (Manual Image Version)")
 
 
-# =============================
-# Preferences Section
-# =============================
+# ---------------------------------------------------
+# Preferences
+# ---------------------------------------------------
 st.header("Your Preferences")
-
 prefs = data["preferences"]
 
-shirt_size  = st.text_input("Shirt size:",  prefs.get("shirt_size", ""))
-jacket_size = st.text_input("Jacket size:", prefs.get("jacket_size", ""))
-pants_size  = st.text_input("Pants size:",  prefs.get("pants_size", ""))
-shoe_size   = st.text_input("Shoe size:",   prefs.get("shoe_size", ""))
-styles      = st.text_input("Preferred colors/styles:", prefs.get("styles", ""))
+shirt = st.text_input("Shirt size:", prefs.get("shirt_size", ""))
+jacket = st.text_input("Jacket size:", prefs.get("jacket_size", ""))
+pants = st.text_input("Pants size:", prefs.get("pants_size", ""))
+shoes = st.text_input("Shoe size:", prefs.get("shoe_size", ""))
+styles = st.text_input("Preferred colors/styles:", prefs.get("styles", ""))
 
 if st.button("Save Preferences"):
-    prefs.update({
-        "shirt_size": shirt_size,
-        "jacket_size": jacket_size,
-        "pants_size": pants_size,
-        "shoe_size": shoe_size,
-        "styles": styles,
-    })
+    prefs["shirt_size"] = shirt
+    prefs["jacket_size"] = jacket
+    prefs["pants_size"] = pants
+    prefs["shoe_size"] = shoes
+    prefs["styles"] = styles
+    data["preferences"] = prefs
     save_data(data)
     st.success("Saved!")
 
 
-# =============================
-# Add Item
-# =============================
+# ---------------------------------------------------
+# Predefined categories
+# ---------------------------------------------------
+CATEGORIES = [
+    "Shoes", "Jacket", "Shirts", "Outerwear", "Menswear",
+    "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
+]
+
+
+# ---------------------------------------------------
+# ADD ITEM
+# ---------------------------------------------------
 st.header("Add a New Item")
 
 new_url = st.text_input("Item URL:")
+uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
+
+# Auto-fill name/category from archive
+auto_name = ""
+auto_cat = "Misc"
+auto_img = ""
+
+if new_url in data["archive"]:
+    prev = data["archive"][new_url]
+    auto_name = prev.get("name", "")
+    auto_cat = prev.get("category", "Misc")
+    auto_img = prev.get("image", "")
+
+name = st.text_input("Item name:", auto_name)
+category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
 priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
 if st.button("Add Item"):
-    with st.spinner("Scraping item via ScraperAPI…"):
-        title, img, auto_cat = scrape_item(new_url)
+    # Convert uploaded or fallback to archived image
+    if uploaded_file:
+        img_b64 = file_to_base64(uploaded_file)
+    else:
+        img_b64 = auto_img
 
     item = {
-        "name": title,
+        "name": name,
         "url": new_url,
-        "image": img,
-        "category": auto_cat,
+        "image": img_b64,
+        "category": category,
         "priority": priority,
         "purchased": False
     }
 
+    # Save to current list
     data["items"].append(item)
+
+    # Save to archive for future reuse
+    data["archive"][new_url] = {
+        "name": name,
+        "category": category,
+        "image": img_b64
+    }
+
     save_data(data)
     st.success("Item added!")
     st.rerun()
 
 
-# =============================
-# Filters
-# =============================
+# ---------------------------------------------------
+# FILTERS
+# ---------------------------------------------------
 st.header("Your Wishlist")
 
-all_categories = sorted({i["category"] for i in data["items"]})
-filter_cat = st.multiselect("Filter by category:", all_categories)
+filter_cat = st.multiselect("Filter by category:", CATEGORIES)
 filter_priority = st.multiselect("Filter by priority:", ["High", "Medium", "Low"])
 search = st.text_input("Search items:")
 
@@ -207,54 +157,44 @@ filtered = data["items"]
 
 if filter_cat:
     filtered = [i for i in filtered if i["category"] in filter_cat]
+
 if filter_priority:
     filtered = [i for i in filtered if i["priority"] in filter_priority]
-if search:
+
+if search.strip():
     filtered = [i for i in filtered if search.lower() in i["name"].lower()]
 
 
-# =============================
-# Display Items
-# =============================
+# ---------------------------------------------------
+# DISPLAY ITEMS (2-column layout)
+# ---------------------------------------------------
 cols = st.columns(2)
 
 for idx, item in enumerate(filtered):
     with cols[idx % 2]:
-        with st.container():
-            if item.get("image"):
-                st.image(item["image"], width=260)
-            else:
-                st.write("(no image)")
+        st.write("---")
 
-            st.subheader(item["name"])
-            st.write(f"**Category:** {item['category']}")
-            st.write(f"**Priority:** {item['priority']}")
-            st.write(f"[View Item]({item['url']})")
+        # Show image from Base64
+        show_base64_image(item["image"])
 
-            # Manual override image URL
-            new_img = st.text_input(
-                "Image URL (optional)",
-                value=item.get("image", ""),
-                key=f"img_{idx}"
-            )
-            if new_img != item.get("image"):
-                item["image"] = new_img
-                save_data(data)
-                st.success("Updated image!")
-                st.rerun()
+        st.subheader(item["name"])
+        st.write(f"**Category:** {item['category']}")
+        st.write(f"**Priority:** {item['priority']}")
+        st.write(f"[View Item]({item['url']})")
 
-            purchased_flag = st.checkbox(
-                "Purchased?",
-                value=item.get("purchased", False),
-                key=f"purchased_{idx}"
-            )
-            if purchased_flag != item.get("purchased"):
-                item["purchased"] = purchased_flag
-                save_data(data)
+        # Purchased toggle
+        purchased_flag = st.checkbox(
+            "Purchased?",
+            value=item.get("purchased", False),
+            key=f"purchased_{idx}"
+        )
+        if purchased_flag != item.get("purchased", False):
+            item["purchased"] = purchased_flag
+            save_data(data)
 
-            if st.button("❌ Remove", key=f"rm_{idx}"):
-                data["items"].remove(item)
-                save_data(data)
-                st.warning("Removed.")
-                st.rerun()
-
+        # Remove button
+        if st.button("❌ Remove", key=f"rm_{idx}"):
+            data["items"].remove(item)
+            save_data(data)
+            st.warning("Removed.")
+            st.rerun()
