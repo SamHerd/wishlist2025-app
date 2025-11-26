@@ -98,9 +98,9 @@ def scrape_image(soup):
 def fetch_with_scraperapi(url: str):
     api_url = (
         f"https://api.scraperapi.com/?api_key={API_KEY}"
-        f"&render=false&url={url}"
+        f"&render=true&country=us&keep_headers=true&url={url}"
     )
-    return requests.get(api_url, timeout=20)
+    return requests.get(api_url, timeout=30)
 
 
 # =============================
@@ -307,3 +307,4 @@ for idx, item in enumerate(filtered):
                 st.rerun()
 
 print("APP LOADED")
+
