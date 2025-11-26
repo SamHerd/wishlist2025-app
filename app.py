@@ -83,14 +83,15 @@ st.markdown(
     <style>
 img.banner-img {
     width: 100% !important;
-    max-height: 320px !important;     /* slightly taller */
+    max-height: 320px !important;
     object-fit: cover !important;
-    object-position: center top !important;   /* shift crop upward for face */
+    object-position: 50% 30% !important;  /* <-- adjust vertical crop */
     border-radius: 10px !important;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
     display: block;
     margin-top: 10px;
 }
+
 
     </style>
     """,
@@ -260,4 +261,5 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
 
