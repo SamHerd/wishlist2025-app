@@ -76,113 +76,98 @@ data = load_data()
 # ---------------------------------------------------
 # GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
 # ---------------------------------------------------
-snowflake_css = "\n".join([
-    f".flake{n} {{ left: {n * 2.5}%; animation: fall {4 + (n % 5)}s linear infinite; }}"
-    for n in range(40)
-])
-
-st.markdown(f"""
+st.markdown("""
 <style>
 
-/* REMOVE TOP PADDING + FIX LAYOUT SHIFT */
-[data-testid="stAppViewContainer"] {{
+/* REMOVE TOP PADDING */
+[data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
-    margin-top: -25px !important;
-}}
+}
 
-/* FULL-PAGE ICE BACKGROUND (B-3) */
-html, body, .stApp {{
+/* FULL-PAGE ICE BACKGROUND */
+html, body, .stApp {
     background: linear-gradient(
         to bottom,
         #e6f5ff 0%,
-        #eef7ff 35%,
-        #f3f9ff 70%,
+        #f3f9ff 40%,
         #ffffff 100%
     ) !important;
     background-attachment: fixed !important;
     overflow-x: hidden !important;
-}}
+}
 
-/* SNOWFLAKE BASE STYLE — FALLS BEHIND UI */
-.snowflake {{
+/* SNOWFLAKE BASE STYLE */
+.snowflake {
     position: fixed;
     top: -10px;
-    font-size: 16px;
+    font-size: 18px;
     color: rgba(255,255,255,0.9);
     user-select: none;
     pointer-events: none;
-    z-index: 0 !important;  /* BELOW EVERYTHING */
-}}
-
-/* Ensure all real UI appears ABOVE snowflakes */
-.block-container,
-header, main, footer,
-div[data-testid="stSidebar"] {{
-    position: relative !important;
-    z-index: 10 !important;
-}}
+    z-index: 1; /* BELOW content, ABOVE background */
+    animation: fall linear infinite;
+}
 
 /* Snowfall animation */
-@keyframes fall {{
-    0%   {{ transform: translateY(0) translateX(0); opacity: 1; }}
-    100% {{ transform: translateY(110vh) translateX(-40px); opacity: 0; }}
-}}
+@keyframes fall {
+    0%   { transform: translateY(0) translateX(0); opacity: 1; }
+    100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
+}
 
-{snowflake_css}
+/* Generate 40 flakes at distinct positions */
+""" + "\n".join([
+    f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
+    for n in range(40)
+]) + """
 
 /* ---- Banner Style ---- */
-img.banner-img {{
+img.banner-img {
     width: 100% !important;
     max-height: 380px !important;
     object-fit: cover !important;
     object-position: 50% 30% !important;
-    border-radius: 12px !important;
-    margin-top: 0 !important;
+    border-radius: 10px !important;
+    margin-top: 0px !important;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
-}}
+}
 
-/* ---- CANDY-CANE TITLE STYLE ---- */
-h1, h2, h3 {{
+/* NEON TITLE STYLING */
+h1, h2, h3 {
     font-weight: 900 !important;
-    background-image: repeating-linear-gradient(
-        135deg,
-        #ffffff 0 12px,
-        #ff7088 12px 20px,
-        #b8fff1 20px 28px
-    );
-    -webkit-background-clip: text;
-    color: transparent !important;
-    text-shadow: 0px 0px 4px rgba(0,0,0,0.18);
-}}
+    color: #0a3d4f !important;
+    text-shadow:
+        0 0 8px rgba(0,255,200,0.35),
+        0 0 14px rgba(0,255,200,0.25);
+}
 
-/* ---- Tabs ---- */
-.stTabs [data-baseweb="tab"] {{
+/* TABS */
+.stTabs [data-baseweb="tab"] {
     color: #0ff !important;
     font-weight: 600 !important;
-}}
-.stTabs [data-baseweb="tab"]:hover {{
+}
+.stTabs [data-baseweb="tab"]:hover {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
-}}
+}
 
-/* ---- Item Card ---- */
-div[data-testid="column"] > div {{
+/* ITEM CARD BACKGLOW */
+div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
-    padding: 12px 16px;
+    padding: 10px 14px;
     box-shadow: 0 0 12px rgba(0,255,180,0.15);
-}}
+}
 
-/* ---- Primary Button ---- */
-button[kind="primary"] {{
+/* BUTTONS */
+button[kind="primary"] {
     background-color: #0e0e0e !important;
     border: 1px solid #0ff !important;
     box-shadow: 0 0 8px rgba(0,255,180,0.4) !important;
-    border-radius: 6px !important;
-}}
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# Inject snowflakes
+# Inject snowflakes into the DOM
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
 
@@ -208,7 +193,7 @@ CATEGORIES = [
 
 
 # ---------------------------------------------------
-# Tabs
+# Tabs (View Wishlist first)
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
@@ -236,12 +221,15 @@ with tab_view:
 
     filtered = list(data["items"])
 
+    # Category filter
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
 
+    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
+    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
@@ -250,6 +238,7 @@ with tab_view:
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
+    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
