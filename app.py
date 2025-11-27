@@ -74,82 +74,123 @@ st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
 # ---------------------------------------------------
-# GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
+# GLOBAL CYBER-CHRISTMAS STYLES
 # ---------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
 <style>
 
-/* REMOVE TOP PADDING */
-[data-testid="stAppViewContainer"] {
-    padding-top: 0 !important;
+/* Root layout tweaks */
+html, body {
+    margin: 0;
+    padding: 0;
 }
 
-/* FULL-PAGE ICE BACKGROUND */
-html, body, .stApp {
-    background: linear-gradient(
-        to bottom,
-        #e6f5ff 0%,
-        #f3f9ff 40%,
-        #ffffff 100%
-    ) !important;
-    background-attachment: fixed !important;
-    overflow-x: hidden !important;
+/* Full-page icy background + static speckled snow */
+.stApp {
+    position: relative;
+    z-index: 0;
+    background-color: #dcefff;
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(255,255,255,0.8) 0 2px, transparent 2px),
+        radial-gradient(circle at 30% 80%, rgba(255,255,255,0.7) 0 2px, transparent 2px),
+        radial-gradient(circle at 70% 30%, rgba(255,255,255,0.7) 0 2px, transparent 2px),
+        linear-gradient(180deg, #e9f5ff 0%, #d2e8fb 40%, #e9f5ff 100%);
+    background-size: 260px 260px, 260px 260px, 260px 260px, cover;
 }
 
-/* SNOWFLAKE BASE STYLE */
-.snowflake {
+/* Block container: pull content up a bit */
+.block-container {
+    padding-top: 1.5rem;
+    position: relative;
+    z-index: 1;  /* above snow overlay */
+}
+
+/* Falling snow overlay (animated, very light but visible) */
+.stApp::after {
+    content: "";
     position: fixed;
-    top: -10px;
-    font-size: 18px;
-    color: rgba(255,255,255,0.9);
-    user-select: none;
+    inset: 0;
     pointer-events: none;
-    z-index: 1; /* BELOW content, ABOVE background */
-    animation: fall linear infinite;
+    z-index: 0;
+    background-image:
+        radial-gradient(circle, rgba(255,255,255,0.85) 0 2px, transparent 2px),
+        radial-gradient(circle, rgba(255,255,255,0.55) 0 1.6px, transparent 1.6px);
+    background-size: 220px 220px, 300px 300px;
+    animation: snow-fall 32s linear infinite;
+    opacity: 0.85;
 }
 
 /* Snowfall animation */
-@keyframes fall {
-    0%   { transform: translateY(0) translateX(0); opacity: 1; }
-    100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
+@keyframes snow-fall {
+    0% {
+        background-position: 0 -100px, 0 0;
+    }
+    100% {
+        background-position: 0 800px, 0 900px;
+    }
 }
 
-/* Generate 40 flakes at distinct positions */
-""" + "\n".join([
-    f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
-    for n in range(40)
-]) + """
-
-/* ---- Banner Style ---- */
+/* ---- Banner Styling ---- */
 img.banner-img {
     width: 100% !important;
-    max-height: 380px !important;
+    max-height: 400px !important;
     object-fit: cover !important;
     object-position: 50% 30% !important;
     border-radius: 10px !important;
-    margin-top: 0px !important;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
+    display: block;
+    margin-top: 0.75rem;
 }
 
-/* NEON TITLE STYLING */
-h1, h2, h3 {
-    font-weight: 900 !important;
-    color: #0a3d4f !important;
+/* ---- Candy-cane cyber titles ---- */
+h1.app-title, h2.section-title {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+    margin-top: 0.3rem;
+    margin-bottom: 0.8rem;
+    background-image: repeating-linear-gradient(
+        135deg,
+        #ffffff 0px,
+        #ffffff 8px,
+        #ff6b81 8px,
+        #ff6b81 14px,
+        #b8fff1 14px,
+        #b8fff1 20px
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
     text-shadow:
-        0 0 8px rgba(0,255,200,0.35),
-        0 0 14px rgba(0,255,200,0.25);
+        0 0 6px rgba(0, 0, 0, 0.4),
+        0 0 10px rgba(0, 255, 180, 0.7);
 }
 
-/* TABS */
+/* Section titles a bit smaller */
+h2.section-title {
+    font-size: 1.4rem;
+}
+
+/* ---- Neon Tabs ---- */
 .stTabs [data-baseweb="tab"] {
     color: #0ff !important;
     font-weight: 600 !important;
+    transition: 0.25s;
 }
+
 .stTabs [data-baseweb="tab"]:hover {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
 }
 
-/* ITEM CARD BACKGLOW */
+/* ---- Fancy neon divider ---- */
+hr {
+    border: none;
+    border-top: 1px solid rgba(0,255,180,0.35);
+    margin: 1.2rem 0;
+}
+
+/* ---- Glow behind item cards ---- */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
@@ -157,40 +198,56 @@ div[data-testid="column"] > div {
     box-shadow: 0 0 12px rgba(0,255,180,0.15);
 }
 
-/* BUTTONS */
+/* ---- Buttons ---- */
 button[kind="primary"] {
     background-color: #0e0e0e !important;
     border: 1px solid #0ff !important;
     box-shadow: 0 0 8px rgba(0,255,180,0.4) !important;
+    border-radius: 6px !important;
+}
+button[kind="secondary"] {
+    border-radius: 6px !important;
+    box-shadow: 0 0 6px rgba(255,0,80,0.35) !important;
+}
+
+/* Inputs on frosty background */
+input, select, textarea {
+    background-color: rgba(255,255,255,0.9) !important;
 }
 
 </style>
-""", unsafe_allow_html=True)
-
-# Inject snowflakes into the DOM
-for n in range(40):
-    st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
-
+""",
+    unsafe_allow_html=True,
+)
 
 # ---------------------------------------------------
 # Title + Banner
 # ---------------------------------------------------
-st.title("🎁 Sam’s 2025 Christmas Wishlist")
+st.markdown(
+    '<h1 class="app-title">🎁 Sam’s 2025 Christmas Wishlist</h1>',
+    unsafe_allow_html=True,
+)
 
 st.markdown(
     f'<img src="{RAW_BANNER_URL}" class="banner-img">',
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
-
 
 # ---------------------------------------------------
 # Predefined categories
 # ---------------------------------------------------
 CATEGORIES = [
-    "Shoes", "Jacket", "Shirts", "Outerwear", "Menswear",
-    "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
+    "Shoes",
+    "Jacket",
+    "Shirts",
+    "Outerwear",
+    "Menswear",
+    "Graphic Tee",
+    "Toys",
+    "UNT Merch",
+    "Amazon",
+    "Misc",
 ]
-
 
 # ---------------------------------------------------
 # Tabs (View Wishlist first)
@@ -199,13 +256,12 @@ tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
 tab_add = tabs[1]
 
-
 # ---------------------------------------------------
 # TAB 1: VIEW WISHLIST
 # ---------------------------------------------------
 with tab_view:
 
-    st.header("View Sam’s Wishlist")
+    st.markdown('<h2 class="section-title">View Sam’s Wishlist</h2>', unsafe_allow_html=True)
     st.write("<hr>", unsafe_allow_html=True)
 
     filter_cat = st.multiselect("Filter by category:", CATEGORIES)
@@ -230,13 +286,25 @@ with tab_view:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
     # Price filters
-    min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
-    max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
+    min_price_val, _ = (
+        parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
+    )
+    max_price_val, _ = (
+        parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
+    )
 
     if min_price_val is not None:
-        filtered = [i for i in filtered if i.get("price") is not None and i["price"] >= min_price_val]
+        filtered = [
+            i
+            for i in filtered
+            if i.get("price") is not None and i["price"] >= min_price_val
+        ]
     if max_price_val is not None:
-        filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
+        filtered = [
+            i
+            for i in filtered
+            if i.get("price") is not None and i["price"] <= max_price_val
+        ]
 
     # Search
     if search.strip():
@@ -247,6 +315,7 @@ with tab_view:
 
     for idx, item in enumerate(filtered):
         with cols[idx % 2]:
+
             st.write("---")
 
             show_base64_image(item.get("image", ""))
@@ -269,7 +338,7 @@ with tab_view:
             purchased_flag = st.checkbox(
                 "Purchased?",
                 value=item.get("purchased", False),
-                key=f"purchased_{idx}"
+                key=f"purchased_{idx}",
             )
             if purchased_flag != item.get("purchased", False):
                 item["purchased"] = purchased_flag
@@ -287,7 +356,7 @@ with tab_view:
 # ---------------------------------------------------
 with tab_add:
 
-    st.header("Add a New Item")
+    st.markdown('<h2 class="section-title">Add a New Item</h2>', unsafe_allow_html=True)
     st.write("<hr>", unsafe_allow_html=True)
 
     new_url = st.text_input("Item URL:")
@@ -302,10 +371,16 @@ with tab_add:
 
     auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
 
-    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
+    uploaded_file = st.file_uploader(
+        "Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"]
+    )
 
     name = st.text_input("Item name:", auto_name)
-    category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
+    category = st.selectbox(
+        "Category:",
+        CATEGORIES,
+        index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0,
+    )
     priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
     size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
@@ -336,7 +411,7 @@ with tab_add:
             "purchased": False,
             "size": size,
             "style": style,
-            "price": price_val
+            "price": price_val,
         }
 
         data["items"].append(item)
