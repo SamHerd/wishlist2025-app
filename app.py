@@ -74,37 +74,24 @@ st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
 # ---------------------------------------------------
-# GLOBAL BACKGROUND + SPACING FIX + SNOW + BANNER ZOOM-OUT
+# GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-/* REMOVE ALL TOP SPACING */
-html, body, .stApp {
-    margin: 0 !important;
-    padding: 0 !important;
-}
+/* REMOVE TOP PADDING */
 [data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-section.main > div:first-child {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-.block-container {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
 }
 
-/* SOLID ICE BLUE BACKGROUND */
+/* SOLID ICE BLUE BACKGROUND (changed from gradient) */
 html, body, .stApp {
     background: #e6f5ff !important;
     background-attachment: fixed !important;
     overflow-x: hidden !important;
 }
 
-/* SNOWFLAKE STYLE */
+/* SNOWFLAKE BASE STYLE */
 .snowflake {
     position: fixed;
     top: -10px;
@@ -112,7 +99,7 @@ html, body, .stApp {
     color: rgba(255,255,255,0.9);
     user-select: none;
     pointer-events: none;
-    z-index: 1;
+    z-index: 1; /* BELOW content, ABOVE background */
     animation: fall linear infinite;
 }
 
@@ -122,25 +109,24 @@ html, body, .stApp {
     100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
 }
 
-/* Generate 40 flakes */
+/* Generate 40 flakes at distinct positions */
 """ + "\n".join([
     f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
     for n in range(40)
 ]) + """
 
-/* ---- BANNER (ZOOM-OUT VERSION) ---- */
+/* ---- Banner Style ---- */
 img.banner-img {
     width: 100% !important;
-    height: 600px !important;
-    object-fit: contain !important;      /*  <<< ZOOM OUT */
-    object-position: center !important;
-    background-color: #e6f5ff !important; /* Fills blank areas */
+    max-height: 600px !important;
+    object-fit: cover !important;
+    object-position: 50% 30% !important;
     border-radius: 10px !important;
-    margin-top: 0 !important;
+    margin-top: 0px !important;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
 }
 
-/* NEON TITLES */
+/* NEON TITLE STYLING */
 h1, h2, h3 {
     font-weight: 900 !important;
     color: #0a3d4f !important;
@@ -158,7 +144,7 @@ h1, h2, h3 {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
 }
 
-/* ITEM CARDS */
+/* ITEM CARD BACKGLOW */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
@@ -176,20 +162,16 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
-
-# Inject snowflakes
+# Inject snowflakes into the DOM
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
 
 
 # ---------------------------------------------------
-# Title (now flush at top)
+# Title + Banner
 # ---------------------------------------------------
 st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
-# ---------------------------------------------------
-# Banner (zoom-out)
-# ---------------------------------------------------
 st.markdown(
     f'<img src="{RAW_BANNER_URL}" class="banner-img">',
     unsafe_allow_html=True
@@ -204,15 +186,17 @@ CATEGORIES = [
     "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
 ]
 
+
 # ---------------------------------------------------
-# Tabs
+# Tabs (View Wishlist first)
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
 tab_add = tabs[1]
 
+
 # ---------------------------------------------------
-# TAB 1 — View wishlist
+# TAB 1: VIEW WISHLIST
 # ---------------------------------------------------
 with tab_view:
 
@@ -232,21 +216,24 @@ with tab_view:
 
     filtered = list(data["items"])
 
+    # Category filter
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
 
+    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
+    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
     if min_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] >= min_price_val]
-
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
+    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
@@ -291,7 +278,7 @@ with tab_view:
 
 
 # ---------------------------------------------------
-# TAB 2 — Add new item
+# TAB 2: ADD NEW ITEM
 # ---------------------------------------------------
 with tab_add:
 
@@ -324,7 +311,6 @@ with tab_add:
         if not new_url.strip():
             st.error("Please enter an item URL.")
             st.stop()
-
         if not name.strip():
             st.error("Please enter an item name.")
             st.stop()
