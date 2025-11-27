@@ -29,7 +29,6 @@ def load_data():
 
     return data
 
-
 def save_data(data):
     with open(JSON_PATH, "w") as f:
         json.dump(data, f, indent=2)
@@ -42,7 +41,6 @@ def file_to_base64(file):
     if not file:
         return ""
     return base64.b64encode(file.read()).decode("utf-8")
-
 
 def show_base64_image(b64_str):
     if not b64_str:
@@ -73,22 +71,76 @@ def parse_price_to_float(text):
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
+
 # ---------------------------------------------------
 # GLOBAL CYBER-CHRISTMAS STYLES
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-/* ---- Page Background Glow ---- */
-.main {
+/* ============================================================
+   BACKGROUND: Frost Blue Gradient + Subtle Snowfall Animation
+   ============================================================ */
+html, body, [class*="main"] {
     background: linear-gradient(
-        180deg,
-        rgba(0,255,180,0.08) 0%,
-        rgba(0,0,0,0) 45%
+        to bottom,
+        #cfe8ff 0%,
+        #aed8f7 40%,
+        #a0d2f5 100%
     ) !important;
 }
 
-/* ---- Banner Styling ---- */
+/* Snow layer containers */
+#snow-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;   /* ensures snow stays behind all UI */
+    overflow: hidden;
+    z-index: -1;
+}
+
+/* Snowflakes (tiny dots) */
+.snowflake {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    animation: fall linear infinite;
+}
+
+@keyframes fall {
+    0% { transform: translateY(-10vh); opacity: 0.2; }
+    100% { transform: translateY(110vh); opacity: 0.0; }
+}
+
+/* ============================================================
+   CYBER-CANDY-CANE HEADERS (H1/H2/H3)
+   ============================================================ */
+h1, h2, h3 {
+    font-weight: 900 !important;
+    background: repeating-linear-gradient(
+        -45deg,
+        #ff0000 0px,
+        #ff0000 8px,
+        #ffffff 8px,
+        #ffffff 16px
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow:
+        0 0 8px rgba(0,255,180,0.55),
+        0 0 14px rgba(0,255,255,0.4);
+}
+
+/* ============================================================
+   NEON UI ELEMENTS (original theme)
+   ============================================================ */
+
+/* Banner Styling */
 img.banner-img {
     width: 100% !important;
     max-height: 400px !important;
@@ -100,7 +152,7 @@ img.banner-img {
     margin-top: 10px;
 }
 
-/* ---- Neon Tabs ---- */
+/* Tabs Neon */
 .stTabs [data-baseweb="tab"] {
     color: #0ff !important;
     font-weight: 600 !important;
@@ -111,14 +163,14 @@ img.banner-img {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
 }
 
-/* ---- Fancy neon divider ---- */
+/* Fancy neon divider */
 hr {
     border: none;
     border-top: 1px solid rgba(0,255,180,0.35);
     margin: 1.5rem 0;
 }
 
-/* ---- Glow behind item cards ---- */
+/* Item Cards Glow */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
@@ -126,19 +178,40 @@ div[data-testid="column"] > div {
     box-shadow: 0 0 12px rgba(0,255,180,0.15);
 }
 
-/* ---- Buttons ---- */
+/* Buttons */
 button[kind="primary"] {
     background-color: #0e0e0e !important;
     border: 1px solid #0ff !important;
     box-shadow: 0 0 8px rgba(0,255,180,0.4) !important;
     border-radius: 6px !important;
 }
+
 button[kind="secondary"] {
     border-radius: 6px !important;
     box-shadow: 0 0 6px rgba(255,0,80,0.35) !important;
 }
 
 </style>
+
+<!-- Inject Snow Container -->
+<div id="snow-container"></div>
+
+<script>
+// Generate ~80 snowflakes randomly
+const container = document.getElementById("snow-container");
+
+for (let i = 0; i < 80; i++) {
+    let flake = document.createElement("div");
+    flake.classList.add("snowflake");
+
+    flake.style.left = Math.random() * 100 + "vw";
+    flake.style.animationDuration = (8 + Math.random() * 10) + "s";
+    flake.style.animationDelay = (Math.random() * 8) + "s";
+    flake.style.opacity = (0.10 + Math.random() * 0.15);
+
+    container.appendChild(flake);
+}
+</script>
 """, unsafe_allow_html=True)
 
 
@@ -152,6 +225,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 # ---------------------------------------------------
 # Predefined categories
 # ---------------------------------------------------
@@ -159,6 +233,7 @@ CATEGORIES = [
     "Shoes", "Jacket", "Shirts", "Outerwear", "Menswear",
     "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
 ]
+
 
 # ---------------------------------------------------
 # Tabs (View Wishlist first)
@@ -189,15 +264,12 @@ with tab_view:
 
     filtered = list(data["items"])
 
-    # Category filter
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
 
-    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
-    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
@@ -206,7 +278,6 @@ with tab_view:
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
-    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
@@ -215,7 +286,6 @@ with tab_view:
 
     for idx, item in enumerate(filtered):
         with cols[idx % 2]:
-
             st.write("---")
 
             show_base64_image(item.get("image", ""))
@@ -268,7 +338,6 @@ with tab_add:
     auto_size = archive_entry.get("size", "")
     auto_style = archive_entry.get("style", "")
     auto_price_val = archive_entry.get("price", None)
-
     auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
 
     uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
