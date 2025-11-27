@@ -74,37 +74,17 @@ st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
 # ---------------------------------------------------
-# GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES + TOP ALIGN FIX
+# GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-}
-/* FORCE actual content to start at top of icy background */
-.block-container, .main .block-container {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-/* REMOVE THE INVISIBLE STREAMLIT HEADER WRAPPER */
-[data-testid="stHeader"] {
-    height: 0 !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-
-/* REMOVE DEFAULT TOP PADDING */
+/* REMOVE TOP PADDING */
 [data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
 }
-/* REMOVE INTERNAL STREAMLIT CONTENT PADDING */
-[data-testid="block-container"] {
-    padding-top: 0 !important;
-}
 
-
-/* SOLID ICE BLUE BACKGROUND */
+/* SOLID ICE BLUE BACKGROUND (changed from gradient) */
 html, body, .stApp {
     background: #e6f5ff !important;
     background-attachment: fixed !important;
@@ -119,7 +99,7 @@ html, body, .stApp {
     color: rgba(255,255,255,0.9);
     user-select: none;
     pointer-events: none;
-    z-index: 1;
+    z-index: 1; /* BELOW content, ABOVE background */
     animation: fall linear infinite;
 }
 
@@ -129,7 +109,7 @@ html, body, .stApp {
     100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
 }
 
-/* Generate 40 flakes */
+/* Generate 40 flakes at distinct positions */
 """ + "\n".join([
     f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
     for n in range(40)
@@ -182,7 +162,7 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
-# Inject snowflakes
+# Inject snowflakes into the DOM
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
 
@@ -208,14 +188,15 @@ CATEGORIES = [
 
 
 # ---------------------------------------------------
-# Tabs
+# Tabs (View Wishlist first)
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
-tab_view, tab_add = tabs
+tab_view = tabs[0]
+tab_add = tabs[1]
 
 
 # ---------------------------------------------------
-# TAB 1 — View wishlist
+# TAB 1: VIEW WISHLIST
 # ---------------------------------------------------
 with tab_view:
 
@@ -252,7 +233,7 @@ with tab_view:
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
-    # Search filter
+    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
@@ -297,7 +278,7 @@ with tab_view:
 
 
 # ---------------------------------------------------
-# TAB 2 — Add new item
+# TAB 2: ADD NEW ITEM
 # ---------------------------------------------------
 with tab_add:
 
@@ -359,7 +340,3 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
-
-
-
-
