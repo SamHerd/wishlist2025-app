@@ -74,22 +74,17 @@ st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
 # ---------------------------------------------------
-# GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
+# GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES + TOP ALIGN FIX
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-/* REMOVE TOP PADDING (REAL FIX) */
+/* MOVE THE ENTIRE APP UP INTO THE BACKGROUND START */
 [data-testid="block-container"] {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
-div.block-container {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
+    margin-top: -65px !important;
 }
 
-/* REMOVE TOP PADDING (your original line) */
+/* REMOVE DEFAULT TOP PADDING */
 [data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
 }
@@ -187,6 +182,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 # ---------------------------------------------------
 # Predefined categories
 # ---------------------------------------------------
@@ -195,12 +191,13 @@ CATEGORIES = [
     "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
 ]
 
+
 # ---------------------------------------------------
 # Tabs
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
-tab_view = tabs[0]
-tab_add = tabs[1]
+tab_view, tab_add = tabs
+
 
 # ---------------------------------------------------
 # TAB 1 — View wishlist
@@ -223,21 +220,24 @@ with tab_view:
 
     filtered = list(data["items"])
 
+    # Category filter
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
 
+    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
+    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
     if min_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] >= min_price_val]
-
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
+    # Search filter
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
@@ -315,7 +315,6 @@ with tab_add:
         if not new_url.strip():
             st.error("Please enter an item URL.")
             st.stop()
-
         if not name.strip():
             st.error("Please enter an item name.")
             st.stop()
