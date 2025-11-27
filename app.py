@@ -79,7 +79,32 @@ data = load_data()
 # ---------------------------------------------------
 st.markdown("""
 <style>
+/* Move Streamlit’s entire app content UP */
+.block-container {
+    padding-top: 0 !important;
+    margin-top: -70px !important;   /* THIS is the missing piece */
+}
 
+/* Make the icy background begin at the literal top of the page */
+html, body, .stApp {
+    background: #e6f5ff !important;
+    background-attachment: fixed !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Remove Streamlit’s invisible top spacer */
+[data-testid="stAppViewContainer"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Remove the "main block" vertical padding */
+main .block-container {
+    padding-top: 0 !important;
+    margin-top: -70px !important;  /* DO NOT REMOVE */
+}
 /* ----------------------------------------------------
    THE ACTUAL FIX FOR YOUR TOP GAP
    ---------------------------------------------------- */
@@ -354,3 +379,4 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
