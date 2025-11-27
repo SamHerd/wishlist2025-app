@@ -73,30 +73,43 @@ def parse_price_to_float(text):
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
+
 # ---------------------------------------------------
 # GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-/* Make the whole app icy blue, like your other app has a solid background */
+/* ----------------------------------------------------
+   THE ACTUAL FIX FOR YOUR TOP GAP
+   ---------------------------------------------------- */
+
+/* Move icy blue background DOWN */
 html, body, .stApp {
     background: #e6f5ff !important;
     background-attachment: fixed !important;
     overflow-x: hidden !important;
+
+    /* This pushes the background downward */
+    padding-top: 90px !important;
 }
 
-/* Pull the main content (title + banner + tabs) up to the very top */
+/* Pull ENTIRE CONTENT AREA up to meet background */
 .block-container {
-    padding-top: 0rem !important;
+    margin-top: -90px !important;
 }
 
-/* Keep Streamlit view container from re-adding padding */
+
+/* ----------------------------------------------------
+   Existing styling (unchanged)
+   ---------------------------------------------------- */
+
+/* REMOVE internal Streamlit padding */
 [data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
 }
 
-/* SNOWFLAKE BASE STYLE */
+/* Snowflakes */
 .snowflake {
     position: fixed;
     top: -10px;
@@ -104,23 +117,21 @@ html, body, .stApp {
     color: rgba(255,255,255,0.9);
     user-select: none;
     pointer-events: none;
-    z-index: 1; /* BELOW content, ABOVE background */
+    z-index: 1;
     animation: fall linear infinite;
 }
 
-/* Snowfall animation */
 @keyframes fall {
     0%   { transform: translateY(0) translateX(0); opacity: 1; }
     100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
 }
 
-/* Generate 40 flakes at distinct positions */
 """ + "\n".join([
     f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
     for n in range(40)
 ]) + """
 
-/* ---- Banner Style ---- */
+/* Banner styling */
 img.banner-img {
     width: 100% !important;
     max-height: 600px !important;
@@ -131,7 +142,7 @@ img.banner-img {
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
 }
 
-/* NEON TITLE STYLING */
+/* NEON TITLE */
 h1, h2, h3 {
     font-weight: 900 !important;
     color: #0a3d4f !important;
@@ -149,7 +160,7 @@ h1, h2, h3 {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
 }
 
-/* ITEM CARD BACKGLOW */
+/* ITEM CARDS */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
@@ -167,9 +178,10 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
-# Inject snowflakes into the DOM
+# Inject snowflakes
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
+
 
 
 # ---------------------------------------------------
@@ -221,15 +233,12 @@ with tab_view:
 
     filtered = list(data["items"])
 
-    # Category filter
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
 
-    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
-    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
@@ -238,7 +247,6 @@ with tab_view:
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
-    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
@@ -280,6 +288,7 @@ with tab_view:
                 save_data(data)
                 st.warning("Removed.")
                 st.rerun()
+
 
 
 # ---------------------------------------------------
