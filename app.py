@@ -98,6 +98,11 @@ st.markdown("""
 [data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
 }
+/* REMOVE INTERNAL STREAMLIT CONTENT PADDING */
+[data-testid="block-container"] {
+    padding-top: 0 !important;
+}
+
 
 /* SOLID ICE BLUE BACKGROUND */
 html, body, .stApp {
@@ -354,6 +359,7 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
 
 
 
