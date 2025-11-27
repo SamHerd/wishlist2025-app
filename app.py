@@ -79,14 +79,22 @@ data = load_data()
 st.markdown("""
 <style>
 
-/* REMOVE Streamlit's default top padding */
-[data-testid="stAppViewContainer"] {
-    padding-top: 0 !important;
-    background: #e6f5ff !important;   /* APPLY BLUE BACKGROUND TO THE CORRECT WRAPPER */
+/* Make the whole app icy blue, like your other app has a solid background */
+html, body, .stApp {
+    background: #e6f5ff !important;
     background-attachment: fixed !important;
+    overflow-x: hidden !important;
 }
 
-/* DO NOT TOUCH html/body/.stApp THIS TIME  */
+/* Pull the main content (title + banner + tabs) up to the very top */
+.block-container {
+    padding-top: 0rem !important;
+}
+
+/* Keep Streamlit view container from re-adding padding */
+[data-testid="stAppViewContainer"] {
+    padding-top: 0 !important;
+}
 
 /* SNOWFLAKE BASE STYLE */
 .snowflake {
@@ -96,22 +104,23 @@ st.markdown("""
     color: rgba(255,255,255,0.9);
     user-select: none;
     pointer-events: none;
-    z-index: 1;
+    z-index: 1; /* BELOW content, ABOVE background */
     animation: fall linear infinite;
 }
 
+/* Snowfall animation */
 @keyframes fall {
     0%   { transform: translateY(0) translateX(0); opacity: 1; }
     100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
 }
 
-/* Generate 40 flakes */
+/* Generate 40 flakes at distinct positions */
 """ + "\n".join([
     f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
     for n in range(40)
 ]) + """
 
-/* Banner */
+/* ---- Banner Style ---- */
 img.banner-img {
     width: 100% !important;
     max-height: 600px !important;
@@ -122,7 +131,7 @@ img.banner-img {
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
 }
 
-/* Titles */
+/* NEON TITLE STYLING */
 h1, h2, h3 {
     font-weight: 900 !important;
     color: #0a3d4f !important;
@@ -131,7 +140,7 @@ h1, h2, h3 {
         0 0 14px rgba(0,255,200,0.25);
 }
 
-/* Tabs */
+/* TABS */
 .stTabs [data-baseweb="tab"] {
     color: #0ff !important;
     font-weight: 600 !important;
@@ -140,7 +149,7 @@ h1, h2, h3 {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
 }
 
-/* Item cards */
+/* ITEM CARD BACKGLOW */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
@@ -148,7 +157,7 @@ div[data-testid="column"] > div {
     box-shadow: 0 0 12px rgba(0,255,180,0.15);
 }
 
-/* Buttons */
+/* BUTTONS */
 button[kind="primary"] {
     background-color: #0e0e0e !important;
     border: 1px solid #0ff !important;
@@ -158,7 +167,7 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
-# SNOWFLAKES
+# Inject snowflakes into the DOM
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
 
@@ -184,7 +193,7 @@ CATEGORIES = [
 
 
 # ---------------------------------------------------
-# Tabs
+# Tabs (View Wishlist first)
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
@@ -212,11 +221,15 @@ with tab_view:
 
     filtered = list(data["items"])
 
+    # Category filter
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
+
+    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
+    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
@@ -225,6 +238,7 @@ with tab_view:
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
+    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
@@ -272,6 +286,7 @@ with tab_view:
 # TAB 2: ADD NEW ITEM
 # ---------------------------------------------------
 with tab_add:
+
     st.header("Add a New Item")
     st.write("<hr>", unsafe_allow_html=True)
 
@@ -294,8 +309,8 @@ with tab_add:
     priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
     size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
-    style = st.text_input("Style / Color:", auto_style)
-    price_str = st.text_input("Price:", auto_price_str)
+    style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
+    price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
 
     if st.button("Add Item"):
         if not new_url.strip():
