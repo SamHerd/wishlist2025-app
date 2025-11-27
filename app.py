@@ -79,12 +79,22 @@ data = load_data()
 st.markdown("""
 <style>
 
-/* REMOVE TOP PADDING */
+/* REMOVE TOP PADDING (REAL FIX) */
+[data-testid="block-container"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+div.block-container {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* REMOVE TOP PADDING (your original line) */
 [data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
 }
 
-/* SOLID ICE BLUE BACKGROUND (changed from gradient) */
+/* SOLID ICE BLUE BACKGROUND */
 html, body, .stApp {
     background: #e6f5ff !important;
     background-attachment: fixed !important;
@@ -99,7 +109,7 @@ html, body, .stApp {
     color: rgba(255,255,255,0.9);
     user-select: none;
     pointer-events: none;
-    z-index: 1; /* BELOW content, ABOVE background */
+    z-index: 1;
     animation: fall linear infinite;
 }
 
@@ -109,7 +119,7 @@ html, body, .stApp {
     100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
 }
 
-/* Generate 40 flakes at distinct positions */
+/* Generate 40 flakes */
 """ + "\n".join([
     f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
     for n in range(40)
@@ -162,7 +172,7 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
-# Inject snowflakes into the DOM
+# Inject snowflakes
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
 
@@ -177,7 +187,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 # ---------------------------------------------------
 # Predefined categories
 # ---------------------------------------------------
@@ -186,17 +195,15 @@ CATEGORIES = [
     "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
 ]
 
-
 # ---------------------------------------------------
-# Tabs (View Wishlist first)
+# Tabs
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
 tab_add = tabs[1]
 
-
 # ---------------------------------------------------
-# TAB 1: VIEW WISHLIST
+# TAB 1 — View wishlist
 # ---------------------------------------------------
 with tab_view:
 
@@ -216,24 +223,21 @@ with tab_view:
 
     filtered = list(data["items"])
 
-    # Category filter
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
 
-    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
-    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
     if min_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] >= min_price_val]
+
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
-    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
@@ -278,7 +282,7 @@ with tab_view:
 
 
 # ---------------------------------------------------
-# TAB 2: ADD NEW ITEM
+# TAB 2 — Add new item
 # ---------------------------------------------------
 with tab_add:
 
@@ -311,6 +315,7 @@ with tab_add:
         if not new_url.strip():
             st.error("Please enter an item URL.")
             st.stop()
+
         if not name.strip():
             st.error("Please enter an item name.")
             st.stop()
