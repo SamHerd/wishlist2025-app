@@ -29,6 +29,7 @@ def load_data():
 
     return data
 
+
 def save_data(data):
     with open(JSON_PATH, "w") as f:
         json.dump(data, f, indent=2)
@@ -41,6 +42,7 @@ def file_to_base64(file):
     if not file:
         return ""
     return base64.b64encode(file.read()).decode("utf-8")
+
 
 def show_base64_image(b64_str):
     if not b64_str:
@@ -71,76 +73,62 @@ def parse_price_to_float(text):
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
-
 # ---------------------------------------------------
-# GLOBAL CYBER-CHRISTMAS STYLES
+# GLOBAL STYLES: Background, Snow, and Candy-Cane Title
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-/* ============================================================
-   BACKGROUND: Frost Blue Gradient + Subtle Snowfall Animation
-   ============================================================ */
-html, body, [class*="main"] {
-    background: linear-gradient(
-        to bottom,
-        #cfe8ff 0%,
-        #aed8f7 40%,
-        #a0d2f5 100%
+/* ---------- Background Gradient ---------- */
+body, .main {
+    background: linear-gradient(to bottom,
+        #e7f9ff 0%,
+        #f7fcff 40%,
+        #ffffff 100%
     ) !important;
 }
 
-/* Snow layer containers */
-#snow-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;   /* ensures snow stays behind all UI */
-    overflow: hidden;
-    z-index: -1;
-}
-
-/* Snowflakes (tiny dots) */
+/* ---------- Subtle Snowfall ---------- */
 .snowflake {
-    position: absolute;
-    width: 3px;
-    height: 3px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 50%;
-    animation: fall linear infinite;
+    position: fixed;
+    top: -10px;
+    z-index: -1;
+    color: rgba(255,255,255,0.8);
+    user-select: none;
+    pointer-events: none;
+    font-size: 12px;
+    animation-name: fall;
+    animation-timing-function: linear;
 }
 
 @keyframes fall {
-    0% { transform: translateY(-10vh); opacity: 0.2; }
-    100% { transform: translateY(110vh); opacity: 0.0; }
+    0% { transform: translateY(0) rotate(0deg); }
+    100% { transform: translateY(120vh) rotate(360deg); }
 }
 
-/* ============================================================
-   CYBER-CANDY-CANE HEADERS (H1/H2/H3)
-   ============================================================ */
-h1, h2, h3 {
+/* Generate 40 flakes with random horizontal position + speed */
+""" + "\n".join([
+    f".flake{n} {{ left: {n * 2.5}% ; animation-duration: {6 + (n % 5)}s; }}"
+    for n in range(40)
+]) + """
+
+/* ---------- Candy Cane Title (clean version) ---------- */
+.candy-title {
+    font-size: 2.6rem !important;
     font-weight: 900 !important;
     background: repeating-linear-gradient(
         -45deg,
-        #ff0000 0px,
-        #ff0000 8px,
-        #ffffff 8px,
-        #ffffff 16px
+        #ff1a1a 0px,
+        #ff1a1a 10px,
+        #ffffff 10px,
+        #ffffff 20px
     );
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow:
-        0 0 8px rgba(0,255,180,0.55),
-        0 0 14px rgba(0,255,255,0.4);
+    color: transparent !important;
+    text-shadow: 0 0 10px rgba(255,0,0,0.25);
 }
 
-/* ============================================================
-   NEON UI ELEMENTS (original theme)
-   ============================================================ */
-
-/* Banner Styling */
+/* ---------- Banner Styling ---------- */
 img.banner-img {
     width: 100% !important;
     max-height: 400px !important;
@@ -152,25 +140,24 @@ img.banner-img {
     margin-top: 10px;
 }
 
-/* Tabs Neon */
+/* ---------- Neon Tabs ---------- */
 .stTabs [data-baseweb="tab"] {
     color: #0ff !important;
     font-weight: 600 !important;
     transition: 0.25s;
 }
-
 .stTabs [data-baseweb="tab"]:hover {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
 }
 
-/* Fancy neon divider */
+/* ---------- Neon dividers ---------- */
 hr {
     border: none;
     border-top: 1px solid rgba(0,255,180,0.35);
     margin: 1.5rem 0;
 }
 
-/* Item Cards Glow */
+/* ---------- Subtle glowing item cards ---------- */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
@@ -178,53 +165,38 @@ div[data-testid="column"] > div {
     box-shadow: 0 0 12px rgba(0,255,180,0.15);
 }
 
-/* Buttons */
+/* ---------- Buttons ---------- */
 button[kind="primary"] {
     background-color: #0e0e0e !important;
     border: 1px solid #0ff !important;
     box-shadow: 0 0 8px rgba(0,255,180,0.4) !important;
     border-radius: 6px !important;
 }
-
 button[kind="secondary"] {
     border-radius: 6px !important;
     box-shadow: 0 0 6px rgba(255,0,80,0.35) !important;
 }
 
 </style>
-
-<!-- Inject Snow Container -->
-<div id="snow-container"></div>
-
-<script>
-// Generate ~80 snowflakes randomly
-const container = document.getElementById("snow-container");
-
-for (let i = 0; i < 80; i++) {
-    let flake = document.createElement("div");
-    flake.classList.add("snowflake");
-
-    flake.style.left = Math.random() * 100 + "vw";
-    flake.style.animationDuration = (8 + Math.random() * 10) + "s";
-    flake.style.animationDelay = (Math.random() * 8) + "s";
-    flake.style.opacity = (0.10 + Math.random() * 0.15);
-
-    container.appendChild(flake);
-}
-</script>
 """, unsafe_allow_html=True)
 
 
-# ---------------------------------------------------
-# Title + Banner
-# ---------------------------------------------------
-st.title("🎁 Sam’s 2025 Christmas Wishlist")
+# ---------- Render Snowflakes ----------
+snowflakes = "".join([f'<div class="snowflake flake{n}">✦</div>' for n in range(40)])
+st.markdown(snowflakes, unsafe_allow_html=True)
 
+# ---------------------------------------------------
+# Candy Cane Title
+# ---------------------------------------------------
+st.markdown('<div class="candy-title">Sam’s 2025 Christmas Wishlist</div>', unsafe_allow_html=True)
+
+# ---------------------------------------------------
+# Banner
+# ---------------------------------------------------
 st.markdown(
     f'<img src="{RAW_BANNER_URL}" class="banner-img">',
     unsafe_allow_html=True
 )
-
 
 # ---------------------------------------------------
 # Predefined categories
@@ -233,7 +205,6 @@ CATEGORIES = [
     "Shoes", "Jacket", "Shirts", "Outerwear", "Menswear",
     "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
 ]
-
 
 # ---------------------------------------------------
 # Tabs (View Wishlist first)
@@ -266,7 +237,6 @@ with tab_view:
 
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
-
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
@@ -286,22 +256,19 @@ with tab_view:
 
     for idx, item in enumerate(filtered):
         with cols[idx % 2]:
-            st.write("---")
 
+            st.write("---")
             show_base64_image(item.get("image", ""))
 
             st.subheader(item.get("name", "(no name)"))
             st.write(f"**Category:** {item.get('category', 'N/A')}")
             st.write(f"**Priority:** {item.get('priority', 'N/A')}")
-
             if item.get("size"):
                 st.write(f"**Size:** {item['size']}")
             if item.get("style"):
                 st.write(f"**Style/Color:** {item['style']}")
-
             if item.get("price") is not None:
                 st.write(f"**Price:** ${item['price']:,.2f}")
-
             if item.get("url"):
                 st.write(f"[View Item]({item['url']})")
 
@@ -338,6 +305,7 @@ with tab_add:
     auto_size = archive_entry.get("size", "")
     auto_style = archive_entry.get("style", "")
     auto_price_val = archive_entry.get("price", None)
+
     auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
 
     uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
@@ -345,7 +313,6 @@ with tab_add:
     name = st.text_input("Item name:", auto_name)
     category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
     priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
-
     size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
     style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
     price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
