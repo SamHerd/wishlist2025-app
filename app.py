@@ -79,9 +79,6 @@ data = load_data()
 st.markdown("""
 <style>
 
-/* MOVE THE ENTIRE APP UP INTO THE BACKGROUND START */
-[data-testid="block-container"] {
-    margin-top: -65px !important;
 }
 /* FORCE actual content to start at top of icy background */
 .block-container, .main .block-container {
@@ -349,4 +346,5 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
 
