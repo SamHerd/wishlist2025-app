@@ -76,8 +76,15 @@ data = load_data()
 # ---------------------------------------------------
 # GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
 # ---------------------------------------------------
-st.markdown("""
+st.markdown(
+    """
 <style>
+
+/* v-final: pull content up so title sits where the icy blue begins */
+[data-testid="block-container"] {
+    padding-top: 0rem !important;
+    margin-top: 0rem !important;
+}
 
 /* REMOVE TOP PADDING */
 [data-testid="stAppViewContainer"] {
@@ -110,11 +117,14 @@ html, body, .stApp {
 }
 
 /* Generate 40 flakes at distinct positions */
-""" + "\n".join([
-    f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
-    for n in range(40)
-]) + """
-
+"""
+    + "\n".join(
+        [
+            f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
+            for n in range(40)
+        ]
+    )
+    + """
 /* ---- Banner Style ---- */
 img.banner-img {
     width: 100% !important;
@@ -160,12 +170,13 @@ button[kind="primary"] {
 }
 
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 # Inject snowflakes into the DOM
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
-
 
 # ---------------------------------------------------
 # Title + Banner
@@ -174,18 +185,24 @@ st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
 st.markdown(
     f'<img src="{RAW_BANNER_URL}" class="banner-img">',
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
-
 
 # ---------------------------------------------------
 # Predefined categories
 # ---------------------------------------------------
 CATEGORIES = [
-    "Shoes", "Jacket", "Shirts", "Outerwear", "Menswear",
-    "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
+    "Shoes",
+    "Jacket",
+    "Shirts",
+    "Outerwear",
+    "Menswear",
+    "Graphic Tee",
+    "Toys",
+    "UNT Merch",
+    "Amazon",
+    "Misc",
 ]
-
 
 # ---------------------------------------------------
 # Tabs (View Wishlist first)
@@ -194,12 +211,10 @@ tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
 tab_add = tabs[1]
 
-
 # ---------------------------------------------------
 # TAB 1: VIEW WISHLIST
 # ---------------------------------------------------
 with tab_view:
-
     st.header("View Sam’s Wishlist")
     st.write("<hr>", unsafe_allow_html=True)
 
@@ -208,9 +223,13 @@ with tab_view:
 
     col_min, col_max = st.columns(2)
     with col_min:
-        min_price_str = st.text_input("Min price (optional):", key="min_price_filter")
+        min_price_str = st.text_input(
+            "Min price (optional):", key="min_price_filter"
+        )
     with col_max:
-        max_price_str = st.text_input("Max price (optional):", key="max_price_filter")
+        max_price_str = st.text_input(
+            "Max price (optional):", key="max_price_filter"
+        )
 
     search = st.text_input("Search items by name:", key="search_filter")
 
@@ -225,18 +244,36 @@ with tab_view:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
     # Price filters
-    min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
-    max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
+    min_price_val, _ = (
+        parse_price_to_float(min_price_str)
+        if min_price_str.strip()
+        else (None, None)
+    )
+    max_price_val, _ = (
+        parse_price_to_float(max_price_str)
+        if max_price_str.strip()
+        else (None, None)
+    )
 
     if min_price_val is not None:
-        filtered = [i for i in filtered if i.get("price") is not None and i["price"] >= min_price_val]
+        filtered = [
+            i
+            for i in filtered
+            if i.get("price") is not None and i["price"] >= min_price_val
+        ]
     if max_price_val is not None:
-        filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
+        filtered = [
+            i
+            for i in filtered
+            if i.get("price") is not None and i["price"] <= max_price_val
+        ]
 
     # Search
     if search.strip():
         s = search.lower()
-        filtered = [i for i in filtered if s in i.get("name", "").lower()]
+        filtered = [
+            i for i in filtered if s in i.get("name", "").lower()
+        ]
 
     cols = st.columns(2)
 
@@ -264,7 +301,7 @@ with tab_view:
             purchased_flag = st.checkbox(
                 "Purchased?",
                 value=item.get("purchased", False),
-                key=f"purchased_{idx}"
+                key=f"purchased_{idx}",
             )
             if purchased_flag != item.get("purchased", False):
                 item["purchased"] = purchased_flag
@@ -276,12 +313,10 @@ with tab_view:
                 st.warning("Removed.")
                 st.rerun()
 
-
 # ---------------------------------------------------
 # TAB 2: ADD NEW ITEM
 # ---------------------------------------------------
 with tab_add:
-
     st.header("Add a New Item")
     st.write("<hr>", unsafe_allow_html=True)
 
@@ -297,15 +332,23 @@ with tab_add:
 
     auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
 
-    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
+    uploaded_file = st.file_uploader(
+        "Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"]
+    )
 
     name = st.text_input("Item name:", auto_name)
-    category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
+    category = st.selectbox(
+        "Category:",
+        CATEGORIES,
+        index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0,
+    )
     priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
     size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
     style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
-    price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
+    price_str = st.text_input(
+        "Price (e.g. 129.99 or $129.99):", auto_price_str
+    )
 
     if st.button("Add Item"):
         if not new_url.strip():
@@ -331,7 +374,7 @@ with tab_add:
             "purchased": False,
             "size": size,
             "style": style,
-            "price": price_val
+            "price": price_val,
         }
 
         data["items"].append(item)
