@@ -74,14 +74,30 @@ st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
 # ---------------------------------------------------
-# GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
+# GLOBAL BACKGROUND + SNOW + SPACING FIX + BANNER FIX
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-/* REMOVE TOP PADDING */
+/* 💥 REMOVE ALL TOP SPACE */
+html, body, .stApp {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
 [data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+section.main > div:first-child {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+.block-container {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
 }
 
 /* SOLID ICE BLUE BACKGROUND */
@@ -115,14 +131,14 @@ html, body, .stApp {
     for n in range(40)
 ]) + """
 
-/* ---- Banner Style ---- */
+/* ---- BANNER STYLE (TRUE TALL VERSION) ---- */
 img.banner-img {
     width: 100% !important;
-    max-height: 600px !important;
+    height: 600px !important;   /* 🔥 ACTUAL HEIGHT */
     object-fit: cover !important;
     object-position: 50% 30% !important;
     border-radius: 10px !important;
-    margin-top: 0px !important;
+    margin-top: 0 !important;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
 }
 
@@ -144,7 +160,7 @@ h1, h2, h3 {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
 }
 
-/* ITEM CARD */
+/* ITEM CARDS */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
@@ -168,12 +184,12 @@ for n in range(40):
 
 
 # ---------------------------------------------------
-# Title at the VERY top
+# Title at top
 # ---------------------------------------------------
 st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
 # ---------------------------------------------------
-# Banner directly under title
+# Banner under title
 # ---------------------------------------------------
 st.markdown(
     f'<img src="{RAW_BANNER_URL}" class="banner-img">',
@@ -272,6 +288,7 @@ with tab_view:
                 save_data(data)
                 st.warning("Removed.")
                 st.rerun()
+
 
 # ---------------------------------------------------
 # TAB 2 — Add new item
