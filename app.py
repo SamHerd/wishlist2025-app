@@ -91,9 +91,13 @@ st.markdown(
     padding-top: 0 !important;
 }
 
-/* SOLID ICE BLUE BACKGROUND (changed from gradient) */
 html, body, .stApp {
-    background: #e6f5ff !important;
+    background: linear-gradient(
+        to bottom,
+        #9fc9ff 0%,
+        #c3e0ff 40%,
+        #e6f5ff 100%
+    ) !important;
     background-attachment: fixed !important;
     overflow-x: hidden !important;
 }
@@ -383,3 +387,4 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
