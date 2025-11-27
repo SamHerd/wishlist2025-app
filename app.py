@@ -20,12 +20,9 @@ def load_data():
     with open(JSON_PATH, "r") as f:
         data = json.load(f)
 
-    if "preferences" not in data:
-        data["preferences"] = {}
-    if "items" not in data:
-        data["items"] = []
-    if "archive" not in data:
-        data["archive"] = {}
+    data.setdefault("preferences", {})
+    data.setdefault("items", [])
+    data.setdefault("archive", {})
 
     return data
 
@@ -73,65 +70,30 @@ def parse_price_to_float(text):
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
-
 # ---------------------------------------------------
-# GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
+# GLOBAL STYLE FIX — NO TOP GAP
 # ---------------------------------------------------
 st.markdown("""
 <style>
-/* Move Streamlit’s entire app content UP */
-.block-container {
-    padding-top: 0 !important;
-    margin-top: -70px !important;   /* THIS is the missing piece */
-}
 
-/* Make the icy background begin at the literal top of the page */
-html, body, .stApp {
-    background: #e6f5ff !important;
-    background-attachment: fixed !important;
-    overflow-x: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-}
-
-/* Remove Streamlit’s invisible top spacer */
+/* Remove Streamlit's invisible top padding */
 [data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
     margin-top: 0 !important;
 }
 
-/* Remove the "main block" vertical padding */
+/* Pull all content UP */
 main .block-container {
     padding-top: 0 !important;
-    margin-top: -70px !important;  /* DO NOT REMOVE */
+    margin-top: -75px !important;
 }
-/* ----------------------------------------------------
-   THE ACTUAL FIX FOR YOUR TOP GAP
-   ---------------------------------------------------- */
 
-/* Move icy blue background DOWN */
+/* Push the blue background DOWN so the title meets it */
 html, body, .stApp {
     background: #e6f5ff !important;
-    background-attachment: fixed !important;
+    padding-top: 75px !important;
+    margin: 0 !important;
     overflow-x: hidden !important;
-
-    /* This pushes the background downward */
-    padding-top: 90px !important;
-}
-
-/* Pull ENTIRE CONTENT AREA up to meet background */
-.block-container {
-    margin-top: -90px !important;
-}
-
-
-/* ----------------------------------------------------
-   Existing styling (unchanged)
-   ---------------------------------------------------- */
-
-/* REMOVE internal Streamlit padding */
-[data-testid="stAppViewContainer"] {
-    padding-top: 0 !important;
 }
 
 /* Snowflakes */
@@ -140,8 +102,8 @@ html, body, .stApp {
     top: -10px;
     font-size: 18px;
     color: rgba(255,255,255,0.9);
-    user-select: none;
     pointer-events: none;
+    user-select: none;
     z-index: 1;
     animation: fall linear infinite;
 }
@@ -151,32 +113,33 @@ html, body, .stApp {
     100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
 }
 
+/* Generate snowflake positions */
 """ + "\n".join([
-    f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
+    f".flake{n} {{ left: {n*2.5}%; animation-duration: {4 + (n % 5)}s; }}"
     for n in range(40)
 ]) + """
 
-/* Banner styling */
+/* Banner */
 img.banner-img {
-    width: 100% !important;
-    max-height: 600px !important;
-    object-fit: cover !important;
-    object-position: 50% 30% !important;
-    border-radius: 10px !important;
-    margin-top: 0px !important;
+    width: 100%;
+    max-height: 600px;
+    object-fit: cover;
+    object-position: 50% 30%;
+    border-radius: 10px;
+    margin-top: 0;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
 }
 
-/* NEON TITLE */
+/* Title Glow */
 h1, h2, h3 {
-    font-weight: 900 !important;
-    color: #0a3d4f !important;
+    font-weight: 900;
+    color: #0a3d4f;
     text-shadow:
         0 0 8px rgba(0,255,200,0.35),
         0 0 14px rgba(0,255,200,0.25);
 }
 
-/* TABS */
+/* Tabs */
 .stTabs [data-baseweb="tab"] {
     color: #0ff !important;
     font-weight: 600 !important;
@@ -185,7 +148,7 @@ h1, h2, h3 {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
 }
 
-/* ITEM CARDS */
+/* Item cards */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
@@ -193,7 +156,7 @@ div[data-testid="column"] > div {
     box-shadow: 0 0 12px rgba(0,255,180,0.15);
 }
 
-/* BUTTONS */
+/* Buttons */
 button[kind="primary"] {
     background-color: #0e0e0e !important;
     border: 1px solid #0ff !important;
@@ -208,7 +171,6 @@ for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
 
 
-
 # ---------------------------------------------------
 # Title + Banner
 # ---------------------------------------------------
@@ -219,7 +181,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 # ---------------------------------------------------
 # Predefined categories
 # ---------------------------------------------------
@@ -228,17 +189,14 @@ CATEGORIES = [
     "Graphic Tee", "Toys", "UNT Merch", "Amazon", "Misc"
 ]
 
-
 # ---------------------------------------------------
-# Tabs (View Wishlist first)
+# Tabs
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
-tab_view = tabs[0]
-tab_add = tabs[1]
-
+tab_view, tab_add = tabs
 
 # ---------------------------------------------------
-# TAB 1: VIEW WISHLIST
+# TAB 1 — View Wishlist
 # ---------------------------------------------------
 with tab_view:
 
@@ -249,10 +207,8 @@ with tab_view:
     filter_priority = st.multiselect("Filter by priority:", ["High", "Medium", "Low"])
 
     col_min, col_max = st.columns(2)
-    with col_min:
-        min_price_str = st.text_input("Min price (optional):", key="min_price_filter")
-    with col_max:
-        max_price_str = st.text_input("Max price (optional):", key="max_price_filter")
+    min_price_str = col_min.text_input("Min price (optional):", key="min_price_filter")
+    max_price_str = col_max.text_input("Max price (optional):", key="max_price_filter")
 
     search = st.text_input("Search items by name:", key="search_filter")
 
@@ -268,9 +224,9 @@ with tab_view:
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
     if min_price_val is not None:
-        filtered = [i for i in filtered if i.get("price") is not None and i["price"] >= min_price_val]
+        filtered = [i for i in filtered if i.get("price") and i["price"] >= min_price_val]
     if max_price_val is not None:
-        filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
+        filtered = [i for i in filtered if i.get("price") and i["price"] <= max_price_val]
 
     if search.strip():
         s = search.lower()
@@ -280,16 +236,17 @@ with tab_view:
 
     for idx, item in enumerate(filtered):
         with cols[idx % 2]:
-            st.write("---")
 
+            st.write("---")
             show_base64_image(item.get("image", ""))
 
             st.subheader(item.get("name", "(no name)"))
-            st.write(f"**Category:** {item.get('category', 'N/A')}")
-            st.write(f"**Priority:** {item.get('priority', 'N/A')}")
+            st.write(f"**Category:** {item.get('category','N/A')}")
+            st.write(f"**Priority:** {item.get('priority','N/A')}")
 
             if item.get("size"):
                 st.write(f"**Size:** {item['size']}")
+
             if item.get("style"):
                 st.write(f"**Style/Color:** {item['style']}")
 
@@ -304,6 +261,7 @@ with tab_view:
                 value=item.get("purchased", False),
                 key=f"purchased_{idx}"
             )
+
             if purchased_flag != item.get("purchased", False):
                 item["purchased"] = purchased_flag
                 save_data(data)
@@ -314,10 +272,8 @@ with tab_view:
                 st.warning("Removed.")
                 st.rerun()
 
-
-
 # ---------------------------------------------------
-# TAB 2: ADD NEW ITEM
+# TAB 2 — Add New Item
 # ---------------------------------------------------
 with tab_add:
 
@@ -328,28 +284,31 @@ with tab_add:
     archive_entry = data["archive"].get(new_url, {}) if new_url else {}
 
     auto_name = archive_entry.get("name", "")
-    auto_cat = archive_entry.get("category", "Misc")
-    auto_img = archive_entry.get("image", "")
+    auto_cat  = archive_entry.get("category", "Misc")
+    auto_img  = archive_entry.get("image", "")
     auto_size = archive_entry.get("size", "")
-    auto_style = archive_entry.get("style", "")
+    auto_style= archive_entry.get("style", "")
     auto_price_val = archive_entry.get("price", None)
 
-    auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
+    auto_price_str = f"{auto_price_val:.2f}" if auto_price_val else ""
 
-    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
+    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png","jpg","jpeg"])
 
     name = st.text_input("Item name:", auto_name)
-    category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
-    priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
+    category = st.selectbox("Category:", CATEGORIES,
+                            index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
+    priority = st.selectbox("Priority:", ["High","Medium","Low"])
 
     size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
-    style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
-    price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
+    style = st.text_input("Style / Color:", auto_style)
+    price_str = st.text_input("Price:", auto_price_str)
 
     if st.button("Add Item"):
+
         if not new_url.strip():
             st.error("Please enter an item URL.")
             st.stop()
+
         if not name.strip():
             st.error("Please enter an item name.")
             st.stop()
@@ -379,4 +338,3 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
-
