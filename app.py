@@ -79,106 +79,61 @@ data = load_data()
 st.markdown("""
 <style>
 
-/* ---------- Background Gradient ---------- */
-body, .main {
-    background: linear-gradient(to bottom,
-        #e7f9ff 0%,
-        #f7fcff 40%,
+/* ============================================================
+   TRUE FULL-PAGE BACKGROUND  (works in all Streamlit layouts)
+   ============================================================ */
+html, body, .stApp, .main, [data-testid="stAppViewContainer"] {
+    background: linear-gradient(
+        to bottom,
+        #eaf8ff 0%,
+        #f5fbff 40%,
         #ffffff 100%
     ) !important;
+    background-attachment: fixed !important;
 }
 
-/* ---------- Subtle Snowfall ---------- */
+/* ============================================================
+   SUBTLE SNOWFALL (small, behind everything)
+   ============================================================ */
 .snowflake {
     position: fixed;
     top: -10px;
-    z-index: -1;
-    color: rgba(255,255,255,0.8);
+    left: 50%;
+    font-size: 10px;
+    color: rgba(255,255,255,0.7);
     user-select: none;
     pointer-events: none;
-    font-size: 12px;
-    animation-name: fall;
-    animation-timing-function: linear;
+    z-index: -1;
+    animation: fall linear infinite;
 }
 
 @keyframes fall {
-    0% { transform: translateY(0) rotate(0deg); }
-    100% { transform: translateY(120vh) rotate(360deg); }
+    0%   { transform: translateY(0vh)   translateX(0px); }
+    100% { transform: translateY(110vh) translateX(-20px); }
 }
 
-/* Generate 40 flakes with random horizontal position + speed */
 """ + "\n".join([
-    f".flake{n} {{ left: {n * 2.5}% ; animation-duration: {6 + (n % 5)}s; }}"
+    f".flake{n} {{ left: {n*2.2}%; animation-duration: {5 + (n%5)}s; }}"
     for n in range(40)
 ]) + """
 
-/* ---------- Candy Cane Title (clean version) ---------- */
+/* ============================================================
+   CLEAN CYBER TITLE (replaces candy-cane mess)
+   ============================================================ */
 .candy-title {
-    font-size: 2.6rem !important;
-    font-weight: 900 !important;
-    background: repeating-linear-gradient(
-        -45deg,
-        #ff1a1a 0px,
-        #ff1a1a 10px,
-        #ffffff 10px,
-        #ffffff 20px
-    );
-    -webkit-background-clip: text;
-    color: transparent !important;
-    text-shadow: 0 0 10px rgba(255,0,0,0.25);
-}
-
-/* ---------- Banner Styling ---------- */
-img.banner-img {
-    width: 100% !important;
-    max-height: 400px !important;
-    object-fit: cover !important;
-    object-position: 50% 30% !important;
-    border-radius: 10px !important;
-    box-shadow: 0 0 18px rgba(0,255,180,0.35);
-    display: block;
-    margin-top: 10px;
-}
-
-/* ---------- Neon Tabs ---------- */
-.stTabs [data-baseweb="tab"] {
-    color: #0ff !important;
-    font-weight: 600 !important;
-    transition: 0.25s;
-}
-.stTabs [data-baseweb="tab"]:hover {
-    text-shadow: 0 0 10px rgba(0,255,180,0.7);
-}
-
-/* ---------- Neon dividers ---------- */
-hr {
-    border: none;
-    border-top: 1px solid rgba(0,255,180,0.35);
-    margin: 1.5rem 0;
-}
-
-/* ---------- Subtle glowing item cards ---------- */
-div[data-testid="column"] > div {
-    background: rgba(0,255,180,0.03);
-    border-radius: 10px;
-    padding: 10px 14px;
-    box-shadow: 0 0 12px rgba(0,255,180,0.15);
-}
-
-/* ---------- Buttons ---------- */
-button[kind="primary"] {
-    background-color: #0e0e0e !important;
-    border: 1px solid #0ff !important;
-    box-shadow: 0 0 8px rgba(0,255,180,0.4) !important;
-    border-radius: 6px !important;
-}
-button[kind="secondary"] {
-    border-radius: 6px !important;
-    box-shadow: 0 0 6px rgba(255,0,80,0.35) !important;
+    font-size: 2.8rem !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    text-shadow:
+        0 0 8px rgba(0,255,200,0.55),
+        0 0 12px rgba(0,255,200,0.35),
+        0 0 20px rgba(0,255,200,0.25);
+    margin-bottom: 0.4rem;
 }
 
 </style>
 """, unsafe_allow_html=True)
+
 
 
 # ---------- Render Snowflakes ----------
@@ -350,3 +305,4 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
