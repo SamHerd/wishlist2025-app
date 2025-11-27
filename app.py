@@ -83,6 +83,11 @@ st.markdown("""
 [data-testid="block-container"] {
     margin-top: -65px !important;
 }
+/* FORCE actual content to start at top of icy background */
+.block-container, .main .block-container {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
 
 /* REMOVE DEFAULT TOP PADDING */
 [data-testid="stAppViewContainer"] {
@@ -344,3 +349,4 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
