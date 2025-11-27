@@ -149,14 +149,18 @@ h1, h2, h3 {
         0 0 14px rgba(0,255,200,0.25);
 }
 
-/* TABS */
+/* TABS — black text, no glow */
 .stTabs [data-baseweb="tab"] {
-    color: #0ff !important;
+    color: black !important;
     font-weight: 600 !important;
+    text-shadow: none !important;
 }
+
 .stTabs [data-baseweb="tab"]:hover {
-    text-shadow: 0 0 10px rgba(0,255,180,0.7);
+    color: black !important;
+    text-shadow: none !important;
 }
+
 
 /* ITEM CARD BACKGLOW */
 div[data-testid="column"] > div {
@@ -387,4 +391,5 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
 
