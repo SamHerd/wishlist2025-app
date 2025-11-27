@@ -74,27 +74,24 @@ st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
 # ---------------------------------------------------
-# GLOBAL BACKGROUND + SNOW + SPACING FIX + BANNER FIX
+# GLOBAL BACKGROUND + SPACING FIX + SNOW + BANNER ZOOM-OUT
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-/* 💥 REMOVE ALL TOP SPACE */
+/* REMOVE ALL TOP SPACING */
 html, body, .stApp {
     margin: 0 !important;
     padding: 0 !important;
 }
-
 [data-testid="stAppViewContainer"] {
     padding-top: 0 !important;
     margin-top: 0 !important;
 }
-
 section.main > div:first-child {
     padding-top: 0 !important;
     margin-top: 0 !important;
 }
-
 .block-container {
     padding-top: 0 !important;
     margin-top: 0 !important;
@@ -107,7 +104,7 @@ html, body, .stApp {
     overflow-x: hidden !important;
 }
 
-/* SNOWFLAKE BASE STYLE */
+/* SNOWFLAKE STYLE */
 .snowflake {
     position: fixed;
     top: -10px;
@@ -131,18 +128,19 @@ html, body, .stApp {
     for n in range(40)
 ]) + """
 
-/* ---- BANNER STYLE (TRUE TALL VERSION) ---- */
+/* ---- BANNER (ZOOM-OUT VERSION) ---- */
 img.banner-img {
     width: 100% !important;
-    height: 600px !important;   /* 🔥 ACTUAL HEIGHT */
-    object-fit: cover !important;
-    object-position: 50% 30% !important;
+    height: 600px !important;
+    object-fit: contain !important;      /*  <<< ZOOM OUT */
+    object-position: center !important;
+    background-color: #e6f5ff !important; /* Fills blank areas */
     border-radius: 10px !important;
     margin-top: 0 !important;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
 }
 
-/* NEON TITLE */
+/* NEON TITLES */
 h1, h2, h3 {
     font-weight: 900 !important;
     color: #0a3d4f !important;
@@ -178,23 +176,25 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
+
 # Inject snowflakes
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
 
 
 # ---------------------------------------------------
-# Title at top
+# Title (now flush at top)
 # ---------------------------------------------------
 st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
 # ---------------------------------------------------
-# Banner under title
+# Banner (zoom-out)
 # ---------------------------------------------------
 st.markdown(
     f'<img src="{RAW_BANNER_URL}" class="banner-img">',
     unsafe_allow_html=True
 )
+
 
 # ---------------------------------------------------
 # Predefined categories
