@@ -85,6 +85,14 @@ st.markdown("""
     padding-top: 0 !important;
     margin-top: 0 !important;
 }
+/* REMOVE THE INVISIBLE STREAMLIT HEADER WRAPPER */
+[data-testid="stHeader"] {
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
 
 /* REMOVE DEFAULT TOP PADDING */
 [data-testid="stAppViewContainer"] {
@@ -346,5 +354,6 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
 
 
