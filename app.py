@@ -118,7 +118,7 @@ html, body, .stApp {
 /* ---- Banner Style ---- */
 img.banner-img {
     width: 100% !important;
-    max-height: 380px !important;
+    max-height: 600px !important;
     object-fit: cover !important;
     object-position: 50% 30% !important;
     border-radius: 10px !important;
@@ -340,3 +340,4 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
