@@ -3,6 +3,7 @@ import json
 import base64
 from pathlib import Path
 
+
 JSON_PATH = "wishlist.json"
 
 RAW_BANNER_URL = (
@@ -36,7 +37,7 @@ def save_data(data):
 
 
 # ---------------------------------------------------
-# Base64 image helpers
+# Base64 helpers
 # ---------------------------------------------------
 def file_to_base64(file):
     if not file:
@@ -73,65 +74,72 @@ def parse_price_to_float(text):
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
+
 # ---------------------------------------------------
-# GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
+# ✨ BACKGROUND + TITLE POSITION + SNOW + BANNER HEIGHT FIX
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-/* REMOVE TOP PADDING */
-[data-testid="stAppViewContainer"] {
-    padding-top: 0 !important;
-}
-
-/* FULL-PAGE ICE BACKGROUND */
+/* REMOVE ALL TOP PADDING AND GAP */
 html, body, .stApp {
-    background: linear-gradient(
-        to bottom,
-        #e6f5ff 0%,
-        #f3f9ff 40%,
-        #ffffff 100%
-    ) !important;
-    background-attachment: fixed !important;
+    background: #e6f5ff !important;   /* Solid icy blue */
+    margin: 0 !important;
+    padding: 0 !important;
     overflow-x: hidden !important;
 }
 
-/* SNOWFLAKE BASE STYLE */
+[data-testid="stAppViewContainer"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+.block-container {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* TITLE — pull to the very top */
+h1 {
+    margin-top: 10px !important;
+}
+
+/* SNOWFLAKES */
 .snowflake {
     position: fixed;
     top: -10px;
     font-size: 18px;
-    color: rgba(255,255,255,0.9);
+    color: rgba(255,255,255,0.95);
     user-select: none;
     pointer-events: none;
-    z-index: 1; /* BELOW content, ABOVE background */
+    z-index: 1;
     animation: fall linear infinite;
 }
 
-/* Snowfall animation */
 @keyframes fall {
     0%   { transform: translateY(0) translateX(0); opacity: 1; }
     100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
 }
 
-/* Generate 40 flakes at distinct positions */
+/* Generate 40 flakes with varied animation speeds */
 """ + "\n".join([
-    f".flake{n} {{ left: {n * 2.5}%; animation-duration: {4 + (n % 5)}s; }}"
+    f".flake{n} {{ left: {n * 2.5}%; animation-duration: {5 + (n % 4)}s; }}"
     for n in range(40)
 ]) + """
 
-/* ---- Banner Style ---- */
+/* --- BANNER FIX: taller + centered --- */
 img.banner-img {
     width: 100% !important;
-    max-height: 380px !important;
+    max-height: 600px !important;   /* 🔥 Increase height */
+    height: 600px !important;
     object-fit: cover !important;
-    object-position: 50% 30% !important;
+    object-position: center top !important;
     border-radius: 10px !important;
-    margin-top: 0px !important;
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
+    margin-top: 0 !important;
 }
 
-/* NEON TITLE STYLING */
+/* HEADERS */
 h1, h2, h3 {
     font-weight: 900 !important;
     color: #0a3d4f !important;
@@ -149,11 +157,11 @@ h1, h2, h3 {
     text-shadow: 0 0 10px rgba(0,255,180,0.7);
 }
 
-/* ITEM CARD BACKGLOW */
+/* ITEM CARD */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
-    padding: 10px 14px;
+    padding: 12px 16px;
     box-shadow: 0 0 12px rgba(0,255,180,0.15);
 }
 
@@ -167,7 +175,8 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
-# Inject snowflakes into the DOM
+
+# Inject snowflakes
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
 
@@ -184,7 +193,7 @@ st.markdown(
 
 
 # ---------------------------------------------------
-# Predefined categories
+# Categories
 # ---------------------------------------------------
 CATEGORIES = [
     "Shoes", "Jacket", "Shirts", "Outerwear", "Menswear",
@@ -193,7 +202,7 @@ CATEGORIES = [
 
 
 # ---------------------------------------------------
-# Tabs (View Wishlist first)
+# Tabs
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
@@ -201,7 +210,7 @@ tab_add = tabs[1]
 
 
 # ---------------------------------------------------
-# TAB 1: VIEW WISHLIST
+# TAB 1 — VIEW WISHLIST
 # ---------------------------------------------------
 with tab_view:
 
@@ -221,24 +230,20 @@ with tab_view:
 
     filtered = list(data["items"])
 
-    # Category filter
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
 
-    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
-    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
     if min_price_val is not None:
-        filtered = [i for i in filtered if i.get("price") is not None and i["price"] >= min_price_val]
+        filtered = [i for i in filtered if i.get("price") and i["price"] >= min_price_val]
     if max_price_val is not None:
-        filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
+        filtered = [i for i in filtered if i.get("price") and i["price"] <= max_price_val]
 
-    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
@@ -248,9 +253,7 @@ with tab_view:
     for idx, item in enumerate(filtered):
         with cols[idx % 2]:
             st.write("---")
-
             show_base64_image(item.get("image", ""))
-
             st.subheader(item.get("name", "(no name)"))
             st.write(f"**Category:** {item.get('category', 'N/A')}")
             st.write(f"**Priority:** {item.get('priority', 'N/A')}")
@@ -260,15 +263,15 @@ with tab_view:
             if item.get("style"):
                 st.write(f"**Style/Color:** {item['style']}")
 
-            if item.get("price") is not None:
+            if item.get("price"):
                 st.write(f"**Price:** ${item['price']:,.2f}")
 
             if item.get("url"):
                 st.write(f"[View Item]({item['url']})")
 
             purchased_flag = st.checkbox(
-                "Purchased?",
-                value=item.get("purchased", False),
+                "Purchased?", 
+                value=item.get("purchased", False), 
                 key=f"purchased_{idx}"
             )
             if purchased_flag != item.get("purchased", False):
@@ -283,7 +286,7 @@ with tab_view:
 
 
 # ---------------------------------------------------
-# TAB 2: ADD NEW ITEM
+# TAB 2 — ADD ITEM
 # ---------------------------------------------------
 with tab_add:
 
@@ -308,9 +311,9 @@ with tab_add:
     category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
     priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
-    size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
-    style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
-    price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
+    size = st.text_input("Size:", auto_size)
+    style = st.text_input("Style / Color:", auto_style)
+    price_str = st.text_input("Price:", auto_price_str)
 
     if st.button("Add Item"):
         if not new_url.strip():
