@@ -3,15 +3,16 @@ import json
 import base64
 from pathlib import Path
 
-
+# ---------------------------------------------------
+# CONSTANTS
+# ---------------------------------------------------
 JSON_PATH = "wishlist.json"
-
 RAW_BANNER_URL = (
     "https://raw.githubusercontent.com/SamHerd/wishlist2025-app/main/christmas_banner.jpg"
 )
 
 # ---------------------------------------------------
-# Load + Save JSON
+# LOAD/SAVE JSON
 # ---------------------------------------------------
 def load_data():
     p = Path(JSON_PATH)
@@ -21,12 +22,9 @@ def load_data():
     with open(JSON_PATH, "r") as f:
         data = json.load(f)
 
-    if "preferences" not in data:
-        data["preferences"] = {}
-    if "items" not in data:
-        data["items"] = []
-    if "archive" not in data:
-        data["archive"] = {}
+    data.setdefault("preferences", {})
+    data.setdefault("items", [])
+    data.setdefault("archive", {})
 
     return data
 
@@ -37,7 +35,7 @@ def save_data(data):
 
 
 # ---------------------------------------------------
-# Base64 helpers
+# IMAGE HELPERS
 # ---------------------------------------------------
 def file_to_base64(file):
     if not file:
@@ -53,15 +51,13 @@ def show_base64_image(b64_str):
 
 
 # ---------------------------------------------------
-# Price parser
+# PRICE PARSER
 # ---------------------------------------------------
 def parse_price_to_float(text):
     if not text or not text.strip():
         return None, None
-
     raw = text.strip()
     cleaned = raw.replace("$", "").replace(",", "").strip()
-
     try:
         return float(cleaned), None
     except ValueError:
@@ -69,120 +65,94 @@ def parse_price_to_float(text):
 
 
 # ---------------------------------------------------
-# Streamlit Setup
+# STREAMLIT SETUP
 # ---------------------------------------------------
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
-
 # ---------------------------------------------------
-# ✨ BACKGROUND + TITLE POSITION + SNOW + BANNER HEIGHT FIX
+# GLOBAL STYLES (ZERO TOP SPACE + BLUE BG + SNOW)
 # ---------------------------------------------------
 st.markdown("""
 <style>
 
-/* REMOVE ALL TOP PADDING AND GAP */
-html, body, .stApp {
-    background: #e6f5ff !important;   /* Solid icy blue */
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow-x: hidden !important;
-}
+    /* Remove ALL default padding/margins/headers */
+    header, [data-testid="stHeader"], [data-testid="stAppHeader"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+    }
 
-[data-testid="stAppViewContainer"] {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
+    [data-testid="stAppViewContainer"],
+    .main, .block-container {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
 
-.block-container {
-    padding-top: 0 !important;
-    margin-top: 0 !important;
-}
+    [data-testid="stToolbar"] {
+        display: none !important;
+    }
 
-/* TITLE — pull to the very top */
-h1 {
-    margin-top: 10px !important;
-}
+    /* Solid icy blue background */
+    html, body, .stApp {
+        background: #e6f5ff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow-x: hidden !important;
+    }
 
-/* SNOWFLAKES */
-.snowflake {
-    position: fixed;
-    top: -10px;
-    font-size: 18px;
-    color: rgba(255,255,255,0.95);
-    user-select: none;
-    pointer-events: none;
-    z-index: 1;
-    animation: fall linear infinite;
-}
+    /* Snowflake style */
+    .snowflake {
+        position: fixed;
+        top: -10px;
+        font-size: 18px;
+        color: rgba(255,255,255,0.95);
+        user-select: none;
+        pointer-events: none;
+        z-index: 1;
+        animation: fall linear infinite;
+    }
 
-@keyframes fall {
-    0%   { transform: translateY(0) translateX(0); opacity: 1; }
-    100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
-}
+    @keyframes fall {
+        0%   { transform: translateY(0) translateX(0); opacity: 1; }
+        100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
+    }
 
-/* Generate 40 flakes with varied animation speeds */
 """ + "\n".join([
     f".flake{n} {{ left: {n * 2.5}%; animation-duration: {5 + (n % 4)}s; }}"
     for n in range(40)
 ]) + """
 
-/* --- BANNER FIX: taller + centered --- */
-img.banner-img {
-    width: 100% !important;
-    max-height: 600px !important;   /* 🔥 Increase height */
-    height: 600px !important;
-    object-fit: cover !important;
-    object-position: center top !important;
-    border-radius: 10px !important;
-    box-shadow: 0 0 18px rgba(0,255,180,0.35);
-    margin-top: 0 !important;
-}
+    /* Banner (extended height) */
+    img.banner-img {
+        width: 100% !important;
+        height: 600px !important;
+        max-height: 600px !important;
+        object-fit: cover !important;
+        object-position: center top !important;
+        border-radius: 10px !important;
+        box-shadow: 0 0 20px rgba(0,255,200,0.35);
+        margin-top: 0 !important;
+    }
 
-/* HEADERS */
-h1, h2, h3 {
-    font-weight: 900 !important;
-    color: #0a3d4f !important;
-    text-shadow:
-        0 0 8px rgba(0,255,200,0.35),
-        0 0 14px rgba(0,255,200,0.25);
-}
-
-/* TABS */
-.stTabs [data-baseweb="tab"] {
-    color: #0ff !important;
-    font-weight: 600 !important;
-}
-.stTabs [data-baseweb="tab"]:hover {
-    text-shadow: 0 0 10px rgba(0,255,180,0.7);
-}
-
-/* ITEM CARD */
-div[data-testid="column"] > div {
-    background: rgba(0,255,180,0.03);
-    border-radius: 10px;
-    padding: 12px 16px;
-    box-shadow: 0 0 12px rgba(0,255,180,0.15);
-}
-
-/* BUTTONS */
-button[kind="primary"] {
-    background-color: #0e0e0e !important;
-    border: 1px solid #0ff !important;
-    box-shadow: 0 0 8px rgba(0,255,180,0.4) !important;
-}
+    /* Neon titles */
+    h1, h2, h3 {
+        font-weight: 900 !important;
+        color: #0a3d4f !important;
+        text-shadow: 0 0 8px rgba(0,255,200,0.35),
+                     0 0 14px rgba(0,255,200,0.25);
+    }
 
 </style>
 """, unsafe_allow_html=True)
 
-
-# Inject snowflakes
+# Snowflakes injected
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
 
 
 # ---------------------------------------------------
-# Title + Banner
+# TITLE + BANNER (AT THE VERY TOP NOW)
 # ---------------------------------------------------
 st.title("🎁 Sam’s 2025 Christmas Wishlist")
 
@@ -193,7 +163,7 @@ st.markdown(
 
 
 # ---------------------------------------------------
-# Categories
+# CATEGORIES
 # ---------------------------------------------------
 CATEGORIES = [
     "Shoes", "Jacket", "Shirts", "Outerwear", "Menswear",
@@ -202,15 +172,13 @@ CATEGORIES = [
 
 
 # ---------------------------------------------------
-# Tabs
+# TABS (VIEW FIRST)
 # ---------------------------------------------------
-tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
-tab_view = tabs[0]
-tab_add = tabs[1]
+tab_view, tab_add = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 
 
 # ---------------------------------------------------
-# TAB 1 — VIEW WISHLIST
+# TAB 1 — VIEW
 # ---------------------------------------------------
 with tab_view:
 
@@ -221,12 +189,10 @@ with tab_view:
     filter_priority = st.multiselect("Filter by priority:", ["High", "Medium", "Low"])
 
     col_min, col_max = st.columns(2)
-    with col_min:
-        min_price_str = st.text_input("Min price (optional):", key="min_price_filter")
-    with col_max:
-        max_price_str = st.text_input("Max price (optional):", key="max_price_filter")
+    min_price_str = col_min.text_input("Min price (optional):")
+    max_price_str = col_max.text_input("Max price (optional):")
 
-    search = st.text_input("Search items by name:", key="search_filter")
+    search = st.text_input("Search items by name:")
 
     filtered = list(data["items"])
 
@@ -236,8 +202,8 @@ with tab_view:
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
-    min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
-    max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
+    min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str else (None, None)
+    max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str else (None, None)
 
     if min_price_val is not None:
         filtered = [i for i in filtered if i.get("price") and i["price"] >= min_price_val]
@@ -253,40 +219,36 @@ with tab_view:
     for idx, item in enumerate(filtered):
         with cols[idx % 2]:
             st.write("---")
-            show_base64_image(item.get("image", ""))
+            show_base64_image(item.get("image"))
             st.subheader(item.get("name", "(no name)"))
-            st.write(f"**Category:** {item.get('category', 'N/A')}")
-            st.write(f"**Priority:** {item.get('priority', 'N/A')}")
-
+            st.write(f"**Category:** {item.get('category')}")
+            st.write(f"**Priority:** {item.get('priority')}")
             if item.get("size"):
                 st.write(f"**Size:** {item['size']}")
             if item.get("style"):
                 st.write(f"**Style/Color:** {item['style']}")
-
             if item.get("price"):
                 st.write(f"**Price:** ${item['price']:,.2f}")
-
             if item.get("url"):
                 st.write(f"[View Item]({item['url']})")
 
             purchased_flag = st.checkbox(
-                "Purchased?", 
-                value=item.get("purchased", False), 
+                "Purchased?",
+                value=item.get("purchased", False),
                 key=f"purchased_{idx}"
             )
-            if purchased_flag != item.get("purchased", False):
+            if purchased_flag != item.get("purchased"):
                 item["purchased"] = purchased_flag
                 save_data(data)
 
             if st.button("❌ Remove", key=f"rm_{idx}"):
                 data["items"].remove(item)
                 save_data(data)
-                st.warning("Removed.")
                 st.rerun()
 
 
 # ---------------------------------------------------
-# TAB 2 — ADD ITEM
+# TAB 2 — ADD
 # ---------------------------------------------------
 with tab_add:
 
@@ -301,14 +263,14 @@ with tab_add:
     auto_img = archive_entry.get("image", "")
     auto_size = archive_entry.get("size", "")
     auto_style = archive_entry.get("style", "")
-    auto_price_val = archive_entry.get("price", None)
+    auto_price_val = archive_entry.get("price")
 
-    auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
+    auto_price_str = f"{auto_price_val:.2f}" if auto_price_val else ""
 
     uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
 
     name = st.text_input("Item name:", auto_name)
-    category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
+    category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat))
     priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
     size = st.text_input("Size:", auto_size)
@@ -316,6 +278,7 @@ with tab_add:
     price_str = st.text_input("Price:", auto_price_str)
 
     if st.button("Add Item"):
+
         if not new_url.strip():
             st.error("Please enter an item URL.")
             st.stop()
