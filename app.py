@@ -81,17 +81,35 @@ st.markdown(
     """
 <style>
 
-/* v-final: pull content up so title sits where the icy blue begins */
-[data-testid="block-container"] {
-    padding-top: 0rem !important;
-    margin-top: 0rem !important;
+/* ---------------------------------------------------
+   GLOBAL FIX — REMOVE STREAMLIT TOP PADDING
+--------------------------------------------------- */
+
+/* Remove Streamlit’s invisible top padding above content */
+[data-testid="stAppViewContainer"] > .main > div:first-child {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
 }
 
-/* REMOVE TOP PADDING */
-[data-testid="stAppViewContainer"] {
+/* Also remove padding from normal container */
+[data-testid="block-container"] {
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+}
+
+/* Extra fallback — ensure no top spacer sneaks in */
+section[data-testid="stSidebar"] + div, 
+section.main + div {
+    margin-top: 0 !important;
     padding-top: 0 !important;
 }
 
+
+/* ---------------------------------------------------
+   ORIGINAL STYLES
+--------------------------------------------------- */
+
+/* Pull content up so title sits where the icy blue begins */
 html, body, .stApp {
     background: linear-gradient(
         to bottom,
@@ -178,6 +196,7 @@ button[kind="primary"] {
 """,
     unsafe_allow_html=True,
 )
+
 
 # Inject snowflakes into the DOM
 for n in range(40):
