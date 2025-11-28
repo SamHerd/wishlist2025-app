@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import base64
+import time
 from pathlib import Path
 
 JSON_PATH = "wishlist.json"
@@ -110,17 +111,15 @@ html, body, .stApp {
     color: rgba(255,255,255,0.9);
     user-select: none;
     pointer-events: none;
-    z-index: 1; /* BELOW content, ABOVE background */
+    z-index: 1;
     animation: fall linear infinite;
 }
 
-/* Snowfall animation */
 @keyframes fall {
     0%   { transform: translateY(0) translateX(0); opacity: 1; }
     100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
 }
 
-/* Generate 40 flakes at distinct positions */
 """
     + "\n".join(
         [
@@ -149,20 +148,18 @@ h1, h2, h3 {
         0 0 14px rgba(0,255,200,0.25);
 }
 
-/* TABS — black text, no glow */
+/* TABS — black text */
 .stTabs [data-baseweb="tab"] {
     color: black !important;
     font-weight: 600 !important;
     text-shadow: none !important;
 }
-
 .stTabs [data-baseweb="tab"]:hover {
     color: black !important;
     text-shadow: none !important;
 }
 
-
-/* ITEM CARD BACKGLOW */
+/* ITEM CARDS */
 div[data-testid="column"] > div {
     background: rgba(0,255,180,0.03);
     border-radius: 10px;
@@ -231,15 +228,18 @@ with tab_view:
 
     col_min, col_max = st.columns(2)
     with col_min:
-        min_price_str = st.text_input(
-            "Min price (optional):", key="min_price_filter"
-        )
+        min_price_str = st.text_input("Min price (optional):", key="min_price_filter")
     with col_max:
-        max_price_str = st.text_input(
-            "Max price (optional):", key="max_price_filter"
-        )
+        max_price_str = st.text_input("Max price (optional):", key="max_price_filter")
 
     search = st.text_input("Search items by name:", key="search_filter")
+
+    # NEW SORT OPTION
+    sort_option = st.selectbox(
+        "Sort items by:",
+        ["Name (A→Z)", "Price (Low→High)", "Price (High→Low)", "Most Recently Added"],
+        index=0,
+    )
 
     filtered = list(data["items"])
 
@@ -252,37 +252,38 @@ with tab_view:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
     # Price filters
-    min_price_val, _ = (
-        parse_price_to_float(min_price_str)
-        if min_price_str.strip()
-        else (None, None)
-    )
-    max_price_val, _ = (
-        parse_price_to_float(max_price_str)
-        if max_price_str.strip()
-        else (None, None)
-    )
+    min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
+    max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
     if min_price_val is not None:
-        filtered = [
-            i
-            for i in filtered
-            if i.get("price") is not None and i["price"] >= min_price_val
-        ]
+        filtered = [i for i in filtered if i.get("price") is not None and i["price"] >= min_price_val]
     if max_price_val is not None:
-        filtered = [
-            i
-            for i in filtered
-            if i.get("price") is not None and i["price"] <= max_price_val
-        ]
+        filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
     # Search
     if search.strip():
         s = search.lower()
-        filtered = [
-            i for i in filtered if s in i.get("name", "").lower()
-        ]
+        filtered = [i for i in filtered if s in i.get("name", "").lower()]
 
+    # -------------------------
+    # Sorting logic
+    # -------------------------
+    if sort_option == "Name (A→Z)":
+        filtered = sorted(filtered, key=lambda x: x.get("name", "").lower())
+
+    elif sort_option == "Price (Low→High)":
+        filtered = sorted(filtered, key=lambda x: (x.get("price") is None, x.get("price")))
+
+    elif sort_option == "Price (High→Low)":
+        filtered = sorted(filtered, key=lambda x: (x.get("price") is None, -(x.get("price") or 0)))
+
+    elif sort_option == "Most Recently Added":
+        for item in filtered:
+            if "timestamp" not in item:
+                item["timestamp"] = 0
+        filtered = sorted(filtered, key=lambda x: x["timestamp"], reverse=True)
+
+    # Display items
     cols = st.columns(2)
 
     for idx, item in enumerate(filtered):
@@ -340,23 +341,15 @@ with tab_add:
 
     auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
 
-    uploaded_file = st.file_uploader(
-        "Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"]
-    )
+    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
 
     name = st.text_input("Item name:", auto_name)
-    category = st.selectbox(
-        "Category:",
-        CATEGORIES,
-        index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0,
-    )
+    category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
     priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
 
     size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
     style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
-    price_str = st.text_input(
-        "Price (e.g. 129.99 or $129.99):", auto_price_str
-    )
+    price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
 
     if st.button("Add Item"):
         if not new_url.strip():
@@ -383,6 +376,7 @@ with tab_add:
             "size": size,
             "style": style,
             "price": price_val,
+            "timestamp": time.time(),     # NEW
         }
 
         data["items"].append(item)
@@ -391,5 +385,3 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
-
-
