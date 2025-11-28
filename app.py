@@ -35,49 +35,55 @@ st.write(f"GitHub URL: {GITHUB_URL} (DEBUG)")  # ---------------- DEBUG 5
 # Load Wishlist (GitHub first)
 # ---------------------------
 def load_data():
-    st.write("Entered load_data() (DEBUG)")  # ---------------- DEBUG 6
+    st.write("Entered load_data() (DEBUG)")
+
+    gh = get_github_secrets()
+    if gh is None:
+        st.write("No secrets — loading local JSON only (DEBUG)")
+        return load_local()
+
+    url = f"https://api.github.com/repos/{gh['username']}/{gh['repo']}/contents/{JSON_PATH}"
+    st.write(f"GitHub URL: {url} (DEBUG)")
 
     try:
-        st.write("Calling GitHub… (DEBUG)")  # ---------------- DEBUG 7
+        st.write("Calling GitHub… (DEBUG)")
+
         resp = requests.get(
-            GITHUB_URL,
+            url,
             headers={
-                "Authorization": f"token {GITHUB_TOKEN}",
+                "Authorization": f"token {gh['token']}",
                 "Accept": "application/vnd.github+json",
             },
-            params={"ref": GITHUB_BRANCH},
+            params={"ref": gh['branch']},
             timeout=10,
         )
 
-        st.write(f"GitHub status: {resp.status_code} (DEBUG)")  # ---------------- DEBUG 8
+        st.write(f"GitHub status: {resp.status_code} (DEBUG)")
+        st.write(resp.text[:500])  # print a safe preview
 
         if resp.status_code == 200:
             payload = resp.json()
-            st.write("GitHub returned 200 OK (DEBUG)")  # ---------------- DEBUG 9
+            st.write("GitHub returned payload (DEBUG)", payload.keys())
 
-            content = payload.get("content", None)
-            st.write(f"Content exists? {content is not None} (DEBUG)")  # DEBUG 10
-
-            decoded = base64.b64decode(content).decode("utf-8")
+            decoded = base64.b64decode(payload["content"]).decode("utf-8")
             data = json.loads(decoded)
 
-            # Cache SHA for updating
-            st.session_state["wishlist_sha"] = payload.get("sha")
-            st.write(f"SHA cached: {payload.get('sha')} (DEBUG)")  # DEBUG 11
+            st.session_state["wishlist_sha"] = payload["sha"]
+            st.write("Loaded JSON from GitHub (DEBUG)")
             return data
 
         elif resp.status_code == 404:
-            st.write("GitHub returned 404 — new file will be created (DEBUG)")  # DEBUG 12
+            st.write("wishlist.json not found on GitHub — initializing new (DEBUG)")
             st.session_state["wishlist_sha"] = None
             return {"preferences": {}, "items": [], "archive": {}}
 
         else:
-            st.write("GitHub error, falling back to local JSON (DEBUG)")  # DEBUG 13
+            st.error(f"GitHub error: {resp.status_code}")
             st.write(resp.text)
             return load_local()
 
     except Exception as e:
-        st.write(f"EXCEPTION in load_data(): {str(e)} (DEBUG)")  # ---------------- DEBUG 14
+        st.error(f"Exception during GitHub fetch: {e}")
         return load_local()
 
 
@@ -138,3 +144,4 @@ def save_data(data):
         st.write(f"Updated SHA -> {new_sha} (DEBUG)")  # DEBUG 23
     else:
         st.error(f"GitHub update FAILED:\n{resp.text}")
+
