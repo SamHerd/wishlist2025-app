@@ -1,8 +1,8 @@
 import streamlit as st
 import json
 import base64
-import time
 from pathlib import Path
+import time
 
 JSON_PATH = "wishlist.json"
 
@@ -74,6 +74,11 @@ def parse_price_to_float(text):
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
 
+# SAFETY: ensure all items have timestamps (restores old list)
+for item in data["items"]:
+    if "timestamp" not in item:
+        item["timestamp"] = 0
+
 # ---------------------------------------------------
 # GLOBAL BACKGROUND + SNOWFLAKES + TITLE STYLES
 # ---------------------------------------------------
@@ -95,8 +100,8 @@ st.markdown(
 html, body, .stApp {
     background: linear-gradient(
         to bottom,
-        #9fc9ff 0%,
-        #c3e0ff 40%,
+        #8ab9ff 0%,
+        #b7d4ff 40%,
         #e6f5ff 100%
     ) !important;
     background-attachment: fixed !important;
@@ -115,11 +120,13 @@ html, body, .stApp {
     animation: fall linear infinite;
 }
 
+/* Snowfall animation */
 @keyframes fall {
     0%   { transform: translateY(0) translateX(0); opacity: 1; }
     100% { transform: translateY(110vh) translateX(-40px); opacity: 0; }
 }
 
+/* Generate 40 flakes */
 """
     + "\n".join(
         [
@@ -139,7 +146,7 @@ img.banner-img {
     box-shadow: 0 0 18px rgba(0,255,180,0.35);
 }
 
-/* NEON TITLE STYLING */
+/* NEON TITLE */
 h1, h2, h3 {
     font-weight: 900 !important;
     color: #0a3d4f !important;
@@ -148,15 +155,13 @@ h1, h2, h3 {
         0 0 14px rgba(0,255,200,0.25);
 }
 
-/* TABS — black text */
+/* TABS: black */
 .stTabs [data-baseweb="tab"] {
     color: black !important;
     font-weight: 600 !important;
-    text-shadow: none !important;
 }
 .stTabs [data-baseweb="tab"]:hover {
     color: black !important;
-    text-shadow: none !important;
 }
 
 /* ITEM CARDS */
@@ -179,9 +184,10 @@ button[kind="primary"] {
     unsafe_allow_html=True,
 )
 
-# Inject snowflakes into the DOM
+# Snowflakes
 for n in range(40):
     st.markdown(f'<div class="snowflake flake{n}">❄</div>', unsafe_allow_html=True)
+
 
 # ---------------------------------------------------
 # Title + Banner
@@ -192,6 +198,7 @@ st.markdown(
     f'<img src="{RAW_BANNER_URL}" class="banner-img">',
     unsafe_allow_html=True,
 )
+
 
 # ---------------------------------------------------
 # Predefined categories
@@ -209,12 +216,14 @@ CATEGORIES = [
     "Misc",
 ]
 
+
 # ---------------------------------------------------
-# Tabs (View Wishlist first)
+# Tabs
 # ---------------------------------------------------
 tabs = st.tabs(["📜 View Wishlist", "➕ Add a New Item"])
 tab_view = tabs[0]
 tab_add = tabs[1]
+
 
 # ---------------------------------------------------
 # TAB 1: VIEW WISHLIST
@@ -223,6 +232,7 @@ with tab_view:
     st.header("View Sam’s Wishlist")
     st.write("<hr>", unsafe_allow_html=True)
 
+    # Filters
     filter_cat = st.multiselect("Filter by category:", CATEGORIES)
     filter_priority = st.multiselect("Filter by priority:", ["High", "Medium", "Low"])
 
@@ -237,21 +247,19 @@ with tab_view:
     # NEW SORT OPTION
     sort_option = st.selectbox(
         "Sort items by:",
-        ["Name (A→Z)", "Price (Low→High)", "Price (High→Low)", "Most Recently Added"],
-        index=0,
+        ["Name (A→Z)", "Most Recently Added"],
+        key="sort_option",
     )
 
     filtered = list(data["items"])
 
-    # Category filter
+    # Filters
     if filter_cat:
         filtered = [i for i in filtered if i.get("category") in filter_cat]
 
-    # Priority filter
     if filter_priority:
         filtered = [i for i in filtered if i.get("priority") in filter_priority]
 
-    # Price filters
     min_price_val, _ = parse_price_to_float(min_price_str) if min_price_str.strip() else (None, None)
     max_price_val, _ = parse_price_to_float(max_price_str) if max_price_str.strip() else (None, None)
 
@@ -260,28 +268,15 @@ with tab_view:
     if max_price_val is not None:
         filtered = [i for i in filtered if i.get("price") is not None and i["price"] <= max_price_val]
 
-    # Search
     if search.strip():
         s = search.lower()
         filtered = [i for i in filtered if s in i.get("name", "").lower()]
 
-    # -------------------------
-    # Sorting logic
-    # -------------------------
+    # SORTING
     if sort_option == "Name (A→Z)":
         filtered = sorted(filtered, key=lambda x: x.get("name", "").lower())
-
-    elif sort_option == "Price (Low→High)":
-        filtered = sorted(filtered, key=lambda x: (x.get("price") is None, x.get("price")))
-
-    elif sort_option == "Price (High→Low)":
-        filtered = sorted(filtered, key=lambda x: (x.get("price") is None, -(x.get("price") or 0)))
-
-    elif sort_option == "Most Recently Added":
-        for item in filtered:
-            if "timestamp" not in item:
-                item["timestamp"] = 0
-        filtered = sorted(filtered, key=lambda x: x["timestamp"], reverse=True)
+    else:
+        filtered = sorted(filtered, key=lambda x: x.get("timestamp", 0), reverse=True)
 
     # Display items
     cols = st.columns(2)
@@ -322,6 +317,7 @@ with tab_view:
                 st.warning("Removed.")
                 st.rerun()
 
+
 # ---------------------------------------------------
 # TAB 2: ADD NEW ITEM
 # ---------------------------------------------------
@@ -332,6 +328,8 @@ with tab_add:
     new_url = st.text_input("Item URL:")
     archive_entry = data["archive"].get(new_url, {}) if new_url else {}
 
+    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
+
     auto_name = archive_entry.get("name", "")
     auto_cat = archive_entry.get("category", "Misc")
     auto_img = archive_entry.get("image", "")
@@ -341,15 +339,12 @@ with tab_add:
 
     auto_price_str = f"{auto_price_val:.2f}" if auto_price_val is not None else ""
 
-    uploaded_file = st.file_uploader("Upload item image (PNG/JPG)", type=["png", "jpg", "jpeg"])
-
     name = st.text_input("Item name:", auto_name)
     category = st.selectbox("Category:", CATEGORIES, index=CATEGORIES.index(auto_cat) if auto_cat in CATEGORIES else 0)
     priority = st.selectbox("Priority:", ["High", "Medium", "Low"])
-
-    size = st.text_input("Size (e.g. 10.5, L, 34x30):", auto_size)
-    style = st.text_input("Style / Color (e.g. taupe, dark green):", auto_style)
-    price_str = st.text_input("Price (e.g. 129.99 or $129.99):", auto_price_str)
+    size = st.text_input("Size:", auto_size)
+    style = st.text_input("Style / Color:", auto_style)
+    price_str = st.text_input("Price:", auto_price_str)
 
     if st.button("Add Item"):
         if not new_url.strip():
@@ -376,7 +371,7 @@ with tab_add:
             "size": size,
             "style": style,
             "price": price_val,
-            "timestamp": time.time(),     # NEW
+            "timestamp": int(time.time()),   # <-- NEW
         }
 
         data["items"].append(item)
