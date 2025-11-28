@@ -73,6 +73,7 @@ def parse_price_to_float(text):
 # ---------------------------------------------------
 st.set_page_config(page_title="Sam's Wishlist", layout="wide")
 data = load_data()
+st.write("DEBUG:", data)
 
 # SAFETY: ensure all items have timestamps (restores old list)
 for item in data["items"]:
@@ -380,3 +381,4 @@ with tab_add:
         save_data(data)
         st.success("Item added!")
         st.rerun()
+
