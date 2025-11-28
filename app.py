@@ -3,6 +3,7 @@ import json
 import base64
 import requests
 from pathlib import Path
+st.write("App started")
 
 JSON_PATH = "wishlist.json"
 
@@ -102,3 +103,4 @@ def save_data(data):
         st.session_state["wishlist_sha"] = new_sha
     else:
         st.error(f"GitHub update FAILED:\n{resp.text}")
+
